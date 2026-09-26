@@ -53,6 +53,11 @@ class PostService {
         const post = await this.postRepo.createDocument({
             describtion , attachments , attachmentsPublicIds , allowComments , tags: finalTags , ownerId:_id
         })
+        await this.userRepo.findByIdAndUpdateDocument(_id , {
+            $inc:{
+                postsCount:1
+            }
+        })
 
         return res.status(201).json(successResponse("Post added successfully" , 201 , post))
     }

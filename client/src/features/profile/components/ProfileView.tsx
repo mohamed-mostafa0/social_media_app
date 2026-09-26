@@ -14,6 +14,7 @@ import { ProfilePhotosCard } from "./ProfilePhotosCard";
 import { ProfileVideosCard } from "./ProfileVideosCard";
 import { useGetProfile } from "../hooks/useGetProfile";
 import { formatRelativeDate } from "@/lib/date.utils";
+import { FollowersModal } from "./FollowersModal";
 
 interface ProfileViewProps {
   initialData?: UserProfileData;
@@ -22,9 +23,9 @@ interface ProfileViewProps {
 export function ProfileView({ initialData = defaultProfileData }: ProfileViewProps) {
   const loggedInUser = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState("posts");
+  const [followModalType, setFollowModalType] = useState<"followers" | "following" | null>(null);
 
   const { data: gqlProfile, isLoading } = useGetProfile();
-  console.log("gqlProfile", gqlProfile);
   
 
   const currentUser = gqlProfile || loggedInUser;
@@ -67,6 +68,7 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
             stats={profile.stats}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            onOpenFollowModal={setFollowModalType}
           />
         </div>
       </div>
@@ -89,6 +91,14 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
           </div>
         </div>
       </div>
+
+      <FollowersModal
+        isOpen={followModalType !== null}
+        onClose={() => setFollowModalType(null)}
+        initialTab={followModalType || "followers"}
+        followersCount={profile.stats.followersCount}
+        followingCount={profile.stats.followingCount}
+      />
     </div>
   );
 }

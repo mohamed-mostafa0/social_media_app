@@ -9,6 +9,7 @@ interface ProfileStatsBarProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onOpenSettings?: () => void;
+  onOpenFollowModal?: (tab: "followers" | "following") => void;
 }
 
 export function ProfileStatsBar({
@@ -16,10 +17,15 @@ export function ProfileStatsBar({
   activeTab = "posts",
   onTabChange,
   onOpenSettings,
+  onOpenFollowModal,
 }: ProfileStatsBarProps) {
   const [currentTab, setCurrentTab] = useState(activeTab);
 
   const handleTabClick = (tabKey: string) => {
+    if (tabKey === "followers" || tabKey === "following") {
+      onOpenFollowModal?.(tabKey);
+      return;
+    }
     setCurrentTab(tabKey);
     onTabChange?.(tabKey);
   };

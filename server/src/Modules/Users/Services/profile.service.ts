@@ -202,6 +202,109 @@ class ProfileService {
         }
     }
 
+    getFollowers = async (req: Request, res: Response) => {
+        const { user: { _id } } = (req as IRequest).loggedInUser;
+
+        const [followers, following] = await Promise.all([
+            this.followRepo.findDocuments(
+                {
+                    followToId: _id,
+                    status: followStatusEnum.ACCEPTED,
+                },
+                {},
+                {
+                    populate: {
+                        path: "followFromId",
+                        select: "_id profilePicture firstName lastName",
+                    },
+                }
+            ),
+            this.followRepo.findDocuments(
+                {
+                    followFromId: _id,
+                    status: followStatusEnum.ACCEPTED,
+                },
+                { followToId: 1 }
+            ),
+        ]);
+
+        const followingIds = new Set(
+            following.map((f) => f.followToId?.toString()).filter(Boolean)
+        );
+
+        const filteredFollowers = followers.map((f) => {
+            const followerObj = typeof (f as any).toObject === "function" ? (f as any).toObject() : f;
+            const followerUserId = followerObj.followFromId?._id?.toString() || followerObj.followFromId?.toString();
+
+            return {
+                ...followerObj,
+                isFollowing: Boolean(followerUserId && followingIds.has(followerUserId)),
+            };
+        });
+
+        return res.status(200).json(successResponse("", 200, filteredFollowers));
+    };
+
+    getFollowings = async (req:Request , res:Response)=>{
+        const {user:{_id}} = (req as IRequest).loggedInUser
+
+        const following = await this.followRepo.findDocuments({
+            followFromId:_id,
+            status:followStatusEnum.ACCEPTED
+        } , {} , {
+            populate:{
+                path:"followToId",
+                select:"_id profilePicture firstName lastName"
+            }
+        })
+
+        return res.status(200).json(successResponse("",200,following))
+    }
+
+    removeFollower = async(req:Request , res:Response)=>{
+        const{user:{_id}} = (req as IRequest).loggedInUser
+        const {followFromId} = req.params
+
+        if(!followFromId) throw new BadRequestException("followFromId is required")
+
+        const session = await mongoose.startSession()
+        try{
+            await session.withTransaction(async()=>{
+                 const isUserExist = await this.userRepo.findDocumentById(followFromId as string ,{} , {session})
+                if(!isUserExist || isUserExist.isDeleted) throw new BadRequestException("User not found or account is deleted")
+                
+                const existingFollow = await this.followRepo.findOneDocument({
+                    followFromId:followFromId as string,
+                    followToId:_id,
+                    status:followStatusEnum.ACCEPTED
+                } , {} , {session})
+
+                if(!existingFollow) throw new BadRequestException("Follow relationship not found")
+                
+
+                const deletedFollow =await this.followRepo.findDocumentByIdAndDelete(existingFollow._id , {session})
+                if(!deletedFollow) throw new BadRequestException("Failed to delete follow relationship")
+
+
+                const updatedUser = await this.userRepo.findByIdAndUpdateDocument(_id , {
+                    $inc:{followersCount:-1}
+                } ,{session})
+                if(!updatedUser) throw new BadRequestException("Failed to update user")
+
+                const updatedTargetUser = await this.userRepo.findByIdAndUpdateDocument(followFromId as string, {
+                    $inc:{followingCount:-1}
+                } ,{session})
+                if(!updatedTargetUser) throw new BadRequestException("Failed to update target user")
+
+                })
+                
+            }finally{
+                await session.endSession()
+            }
+        return res.status(200).json(successResponse("Follower removed successfully",200))
+
+    }
+
 
 
     

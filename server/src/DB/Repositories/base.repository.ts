@@ -22,11 +22,11 @@ export class BaseRepository<T> {
         return await this.model.create(doc)
     }
 
-    async findByIdAndUpdateDocument(id: mongoose.Types.ObjectId | string, updatedObject: UpdateQuery<T>, options?: QueryOptions) {
+    async findByIdAndUpdateDocument(id: mongoose.Types.ObjectId | string, updatedObject: UpdateQuery<T>, options?: QueryOptions):Promise<T | null> {
         return await this.model.findByIdAndUpdate(id, updatedObject, options)
     }
 
-    async findOneupdateDocument(filters: QueryFilter<T>, updatedObject: UpdateQuery<T>, options?: QueryOptions) {
+    async findOneupdateDocument(filters: QueryFilter<T>, updatedObject: UpdateQuery<T>, options?: QueryOptions):Promise<T | null> {
         return await this.model.findOneAndUpdate(filters, updatedObject, options)
     }
 

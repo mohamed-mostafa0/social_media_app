@@ -26,4 +26,10 @@ profileController.get("/list-requests" , authentication , profileService.listReq
 
 profileController.patch("/respond-to-follow-request", authentication, profileService.respondToFollowRequest)
 
+profileController.get("/followers" , authentication , profileService.getFollowers)
+
+profileController.get("/followings" , authentication , profileService.getFollowings)
+
+profileController.delete("/remove-follower/:followFromId" , authentication , profileService.removeFollower)
+
 

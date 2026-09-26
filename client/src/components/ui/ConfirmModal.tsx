@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiTrash2, FiAlertTriangle, FiX, FiLoader } from "react-icons/fi";
+import { useEscapeKey, useLockBodyScroll } from "@/hooks";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -34,29 +35,8 @@ export function ConfirmModal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isLoading) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isLoading, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  useEscapeKey(onClose, isOpen && !isLoading);
+  useLockBodyScroll(isOpen);
 
   if (!mounted) return null;
 

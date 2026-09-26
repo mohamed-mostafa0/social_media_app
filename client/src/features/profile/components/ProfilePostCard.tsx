@@ -32,7 +32,6 @@ export function ProfilePostCard({
     typeof post.likes === "number" ? post.likes : parseInt(String(post.likes)) || 1400
   );
 
-  console.log("post",post);
   
 
   const handleLike = () => {

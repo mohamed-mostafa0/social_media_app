@@ -22,7 +22,7 @@ export const authentication = async(req:Request , res:Response , next:NextFuncti
 
     const user:IUser | null = await userRepo.findDocumentById(decodedToken._id)
     if(!user) throw next(new NotFoundException("Account not found , Please register first"));
-    console.log(user);
+    // console.log(user);
     
 
     (req as unknown as IRequest).loggedInUser = {user , token:decodedToken as JwtPayload}

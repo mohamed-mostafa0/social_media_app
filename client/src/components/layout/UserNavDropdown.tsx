@@ -13,6 +13,7 @@ import {
 } from "react-icons/fi";
 import { Avatar } from "../ui/Avatar";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
+import { useClickOutside, useEscapeKey } from "@/hooks";
 
 export function UserNavDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,29 +22,8 @@ export function UserNavDropdown() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("keydown", handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
+  useClickOutside(dropdownRef, () => setIsOpen(false), isOpen);
+  useEscapeKey(() => setIsOpen(false), isOpen);
 
   const toggleDropdown = () => setIsOpen((prev) => !prev);
   const closeDropdown = () => setIsOpen(false);
