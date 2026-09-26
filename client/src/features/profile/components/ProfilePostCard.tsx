@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2 } from "react-icons/fi";
+import { useState, useRef } from "react";
+import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2, FiTrash2 } from "react-icons/fi";
 import { ProfilePost } from "../types/profile.types";
+import { useDeletePost } from "@/features/posts";
+import { useClickOutside } from "@/hooks";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 interface ProfilePostCardProps {
   post: ProfilePost;
@@ -18,6 +21,13 @@ export function ProfilePostCard({
   onShare,
 }: ProfilePostCardProps) {
   const [isLiked, setIsLiked] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { mutate: deletePost, isPending: isDeleting } = useDeletePost();
+
+  useClickOutside(menuRef, () => setShowMenu(false), showMenu);
+
   const [likesCount, setLikesCount] = useState(
     typeof post.likes === "number" ? post.likes : parseInt(String(post.likes)) || 1400
   );
@@ -71,7 +81,7 @@ export function ProfilePostCard({
           <img
             src={post.images[0]}
             alt="Post visual"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
       );
@@ -107,13 +117,32 @@ export function ProfilePostCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          aria-label="Post options"
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-        >
-          <FiMoreHorizontal className="w-5 h-5 text-gray-400" />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            aria-label="Post options"
+            onClick={() => setShowMenu((prev) => !prev)}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+          >
+            <FiMoreHorizontal className="w-5 h-5 text-gray-400" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
+                  setIsConfirmOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              >
+                <FiTrash2 className="w-3.5 h-3.5" />
+                <span>Delete Post</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {(post.content || (post.tags && post.tags.length > 0)) && (
@@ -181,6 +210,26 @@ export function ProfilePostCard({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => {
+          if (!isDeleting) setIsConfirmOpen(false);
+        }}
+        onConfirm={() => {
+          deletePost(String(post.id), {
+            onSuccess: () => {
+              setIsConfirmOpen(false);
+            },
+          });
+        }}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </article>
   );
 }

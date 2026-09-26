@@ -36,3 +36,9 @@ export const uploadImagesOnCloudinary = async(files:string[] , folderName:string
 const results = await Promise.all(uploadPromises);
     return results;
 }
+
+export const deleteImagesOnCloudinary = async(publicIds:string[])=>{
+    const deletePromises = publicIds.map(publicId => deleteImageFromCloudinary(publicId));
+    const results = await Promise.all(deletePromises);
+    return results;
+}

@@ -6,4 +6,5 @@ export const PostController = Router()
 
 
 PostController.post("/add" , authentication , uploadImage().array("images") , postService.addPost)
+PostController.delete("/:postId" , authentication , postService.deletePost)
 // PostController.get("/home" , authentication , postService.listHomePosts)

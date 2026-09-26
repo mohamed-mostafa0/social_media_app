@@ -10,6 +10,7 @@ export * from "./components/ProfileVideosCard";
 export * from "./components/ProfileCreatePost";
 export * from "./components/ProfilePostCard";
 export * from "./components/ProfileFeed";
+export * from "./components/ProfileEmptyPosts";
 export * from "./components/ProfileView";
 export * from "./components/FollowRequestsList";
 export * from "./types/request.types";

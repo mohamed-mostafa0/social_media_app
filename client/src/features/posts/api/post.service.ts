@@ -11,4 +11,9 @@ export const postService = {
     });
     return response.data;
   },
+
+  deletePost:async(postId:string)=>{
+    const response = await apiClient.delete(`/post/${postId}`)
+    return response.data
+  }
 };

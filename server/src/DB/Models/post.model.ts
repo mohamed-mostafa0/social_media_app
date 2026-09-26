@@ -8,6 +8,7 @@ import mongoosePaginate from "mongoose-paginate-v2"
 const postSchema = new mongoose.Schema<IPost>({
     describtion:String,
     attachments:[String],
+    attachmentsPublicIds:[String],
     ownerId:{
         type:mongoose.Schema.Types.ObjectId,
         required:true

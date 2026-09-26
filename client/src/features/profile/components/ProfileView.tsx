@@ -29,7 +29,7 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
 
   const currentUser = gqlProfile || loggedInUser;
 
-  const profilePosts: ProfilePost[] = gqlProfile?.posts?.docs?.length
+  const profilePosts: ProfilePost[] = gqlProfile?.posts?.docs
     ? gqlProfile.posts.docs.map((p) => ({
         id: p._id,
         author: {
@@ -43,7 +43,7 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
         comments: p.commentsCount ?? 0,
         shares: 0,
       }))
-    : initialData.posts;
+    : (!gqlProfile && !isLoading ? initialData.posts : []);
 
   const profile: UserProfileData = {
     ...initialData,
@@ -80,7 +80,7 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
           </div>
 
           <div className="lg:col-span-6 order-1 lg:order-2">
-            <ProfileFeed posts={profile.posts} />
+            <ProfileFeed posts={profile.posts} isLoading={isLoading} />
           </div>
 
           <div className="lg:col-span-3 space-y-6 order-3">

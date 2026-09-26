@@ -14,7 +14,7 @@ export class BaseRepository<T> {
         return await this.model.findOne(filters, projection, options)
     }
 
-    async findDocumentById(id: mongoose.Types.ObjectId, projection?: ProjectionType<T>, options?: QueryOptions): Promise<T | null> {
+    async findDocumentById(id: mongoose.Types.ObjectId | string, projection?: ProjectionType<T>, options?: QueryOptions): Promise<T | null> {
         return await this.model.findById(id, projection, options)
     }
 

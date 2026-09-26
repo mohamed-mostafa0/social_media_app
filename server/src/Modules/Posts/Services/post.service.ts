@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { followStatusEnum, type IPost, type IRequest } from "../../../Common/index.js";
 import { FollowRepository, PostRepository, UserRepository } from "../../../DB/Repositories/index.js";
-import { BadRequestException, pagination, successResponse, uploadImageOnCloudinary, uploadImagesOnCloudinary } from "../../../Utils/index.js";
+import { BadRequestException, deleteImagesOnCloudinary, NotFoundException, pagination, successResponse, UnauthorizedException, uploadImageOnCloudinary, uploadImagesOnCloudinary } from "../../../Utils/index.js";
 import { UserModel } from "../../../DB/Models/index.js";
 import type { Types } from "mongoose";
 import type { UploadApiResponse } from "cloudinary";
@@ -42,14 +42,16 @@ class PostService {
         }
 
         let attachments: string[] = [];
+        let attachmentsPublicIds:string[] = []
         if(files?.length){
             const filePaths = files.map(file => file.path)
             const uploadResponses = await uploadImagesOnCloudinary(filePaths , "posts")
             attachments = uploadResponses.map(response => response.secure_url)
+            attachmentsPublicIds = uploadResponses.map(response => response.public_id)
         }
 
         const post = await this.postRepo.createDocument({
-            describtion , attachments , allowComments , tags: finalTags , ownerId:_id
+            describtion , attachments , attachmentsPublicIds , allowComments , tags: finalTags , ownerId:_id
         })
 
         return res.status(201).json(successResponse("Post added successfully" , 201 , post))
@@ -65,6 +67,21 @@ class PostService {
 
     //     return res.status(200).json(successResponse("" , 200 , posts))
     // }
+
+    deletePost = async(req:Request , res:Response)=>{
+        const {postId} = req.params
+        const {user:{_id}} = (req as IRequest).loggedInUser
+
+        const post = await this.postRepo.findDocumentById(postId as string)
+        if(!post) throw new NotFoundException("Post not found")
+        if(post.ownerId.toString() !== _id.toString()) throw new UnauthorizedException("You are not authorized to delete this post")
+
+        await Promise.all([
+            this.postRepo.findDocumentByIdAndDelete(postId as string),
+            deleteImagesOnCloudinary(post.attachmentsPublicIds as string[])
+        ])
+        return res.status(200).json(successResponse("Post deleted successfully" , 200))
+    }
 }
 
 export default new PostService()

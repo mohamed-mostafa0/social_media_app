@@ -18,3 +18,17 @@ export const useAddPost = () => {
     },
   });
 };
+
+export const useDeletePost = ()=>{
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn:(postId:string)=>postService.deletePost(postId),
+        onSuccess:()=>{
+            queryClient.invalidateQueries({queryKey:PROFILE_QUERY_KEY})
+        },
+        onError:(error)=>{
+            console.log(error);
+        }
+    })
+
+}
