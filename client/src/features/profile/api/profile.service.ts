@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/axios";
+import { UpdateProfilePayload, User } from "@/types/user.types";
 
 export interface GraphQLPostDoc {
   _id: string;
@@ -77,5 +78,9 @@ export const profileService = {
     return response.data?.data?.getProfile;
   },
 
-
+  updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
+    const response = await apiClient.put("/profile", payload);
+    return response.data?.data?.data || response.data?.data;
+  },
 };
+

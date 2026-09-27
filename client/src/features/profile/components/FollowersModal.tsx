@@ -317,7 +317,6 @@ export function FollowersModal({
                             </button>
                           )}
 
-                          {/* Remove follower button (X icon) */}
                           <button
                             type="button"
                             onClick={() => handleRemoveFollower(u._id)}

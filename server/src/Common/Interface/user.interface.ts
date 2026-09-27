@@ -12,6 +12,25 @@ export interface IOTP {
     otpType: OtpTypeEnum
 }
 
+export interface ILocation {
+    country?:String,
+    city?: string,
+    governrate?: string,
+    street?: string,
+}
+
+export interface IEducation {
+    university?: string,
+    college?: string,
+    major?:String,
+    graduationYear?:number
+}
+
+export interface ISocialLinks {
+    platformName?:string,
+    link?:string
+}
+
 export interface IUser extends Document {
     firstName: string,
     lastName: string,
@@ -21,6 +40,9 @@ export interface IUser extends Document {
     gender: GenderEnum,
     DOB?: Date,
     age: number
+    location?: ILocation,
+    education?: IEducation,
+    socialLinks?:ISocialLinks[],
     profilePicture?: string,
     profilePictureId?: string,
     coverPicture?: string,

@@ -41,6 +41,22 @@ const userSchema = new mongoose.Schema<IUser>({
         default: GenderEnum.MALE
     },
     DOB: Date,
+    location: {
+        country:{type:String , trim:true},
+        city: { type: String, trim: true },
+        governrate: { type: String, trim: true },
+        street: { type: String, trim: true }
+    },
+    education: {
+        university: { type: String, trim: true },
+        college: { type: String, trim: true },
+        major:{type:String , trim:true},
+        graduationYear:{type:Number}
+    },
+    socialLinks:[{
+        platformName:{type:String ,trim:true },
+        link:{type:String}
+    }],
     profilePicture: String,
     profilePictureId: String,
     coverPicture: String,

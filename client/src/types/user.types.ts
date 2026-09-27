@@ -1,3 +1,22 @@
+export interface UserLocation {
+  country?: string;
+  city?: string;
+  governrate?: string;
+  street?: string;
+}
+
+export interface UserEducation {
+  university?: string;
+  college?: string;
+  major?: string;
+  graduationYear?: number;
+}
+
+export interface UserSocialLink {
+  platformName?: string;
+  link?: string;
+}
+
 export interface User {
   _id: string;
   firstName: string;
@@ -5,6 +24,10 @@ export interface User {
   email: string;
   gender?: 'male' | 'female';
   phoneNumber?: string;
+  DOB?: string;
+  location?: UserLocation;
+  education?: UserEducation;
+  socialLinks?: UserSocialLink[];
   avatar?: string;
   profilePicture?: string;
   coverPicture?: string;
@@ -15,3 +38,15 @@ export interface User {
   postsCount?: number;
   isVerified?: boolean;
 }
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  gender?: 'male' | 'female';
+  phoneNumber?: string;
+  DOB?: string;
+  location?: UserLocation;
+  education?: UserEducation;
+  socialLinks?: UserSocialLink[];
+}
+

@@ -1,11 +1,12 @@
 import {Router} from 'express'
 import profileService from '../Services/profile.service.js'
-import { authentication } from '../../../Middlewares/index.js'
+import { authentication, validation } from '../../../Middlewares/index.js'
 import { uploadImage, validateImage } from '../../../Middlewares/multer.middleware.js'
+import { updateUserValidator } from '../../../Validators/index.js'
 
 export const profileController = Router()
 
-profileController.put("" , authentication, profileService.updateProfile)
+profileController.put("" , authentication,validation(updateUserValidator) ,profileService.updateProfile)
 
 profileController.post("/upload-profile-picture",
     authentication ,

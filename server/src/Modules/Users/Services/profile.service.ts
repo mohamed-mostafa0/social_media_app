@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { FollowRepository, UserRepository } from "../../../DB/Repositories/index.js";
 import { UserModel } from "../../../DB/Models/index.js";
 import mongoose from "mongoose";
-import { BadRequestException, deleteImageFromCloudinary, successResponse, uploadImageOnCloudinary } from "../../../Utils/index.js";
+import { BadRequestException, deleteImageFromCloudinary, NotFoundException, successResponse, uploadImageOnCloudinary } from "../../../Utils/index.js";
 import { followStatusEnum, type IRequest, type IUser } from "../../../Common/index.js";
 
 
@@ -79,15 +79,36 @@ class ProfileService {
     }
 
     updateProfile = async (req: Request, res: Response) => {
-        const { firstName, lastName, password, phoneNumber, gender }: Partial<IUser> = req.body
-        const { user } = (req as unknown as IRequest).loggedInUser
+        const { firstName, lastName, phoneNumber, gender, DOB
+             ,location , socialLinks , education } = req.body
+        const { user:loggedInUser } = (req as unknown as IRequest).loggedInUser
 
-        await this.userRepo.findOneupdateDocument(
-            { _id: user._id, email: user.email },
-            { $set: { firstName, lastName, password, gender, phoneNumber } },
+        const user = await this.userRepo.findDocumentById(loggedInUser._id)
+        if(!user || user.isDeactivated || user.isDeleted) throw new NotFoundException("User not found or account is deactivated or deleted")
+
+        const updateFields: Record<string, any> = {}
+        if (firstName) updateFields.firstName = firstName
+        if (lastName) updateFields.lastName = lastName
+        if (gender) updateFields.gender = gender
+        if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber
+        if (DOB) updateFields.DOB = DOB
+        if (location) updateFields.location = location
+        if (education) updateFields.education = education
+        if (socialLinks) updateFields.socialLinks = socialLinks
+
+        const updatedUser = await this.userRepo.findOneupdateDocument(
+            { _id: loggedInUser._id, email: loggedInUser.email },
+            { $set: updateFields },
             { new: true }
         )
-        return res.json(successResponse("Profile Updated Successfully", 200))
+
+        const userResponse = updatedUser && typeof (updatedUser as any).toObject === 'function'
+            ? (updatedUser as any).toObject()
+            : { ...updatedUser };
+        delete userResponse.password;
+        delete userResponse.OTPs;
+
+        return res.status(200).json(successResponse("Profile Updated Successfully", 200, userResponse))
     }
 
     toggleFollow = async (req: Request, res: Response) => {
