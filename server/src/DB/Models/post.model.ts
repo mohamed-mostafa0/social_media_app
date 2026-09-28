@@ -22,7 +22,15 @@ const postSchema = new mongoose.Schema<IPost>({
             type:mongoose.Schema.Types.ObjectId,
             ref:"User"
         }
-    ]
+    ],
+    commentsCount:{
+        type:Number,
+        default:0
+    },
+    likesCount:{
+        type:Number,
+        default:0
+    }
 }, {
     timestamps:true
 })

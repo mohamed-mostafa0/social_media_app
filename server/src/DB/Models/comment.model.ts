@@ -1,25 +1,53 @@
-import mongoose from "mongoose";
+import mongoose, { type PaginateModel } from "mongoose";
 import type { IComment } from "../../Common/index.js";
+import mongoosePaginate from "mongoose-paginate-v2";
 
 
 
 
 const commentSchema = new mongoose.Schema<IComment>({
-    content:String,
-    attachments:String,
+    content:{
+        type:String,
+        trim:true
+    },
+    attachment:{
+        url:String,
+        publicId:String
+    },
+    postId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Post",
+        required:true,
+        index:true
+    },
     ownerId:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"User"
-    },
-    refId:{
-        type:mongoose.Schema.Types.ObjectId,
-        refPath:"onModel",
+        ref:"User",
         required:true
     },
-    onModel:{
-        type:String,
-        enum:["Post" , "Comment"]
+    parentCommentId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Comment",
+        default:null,
+        index:true
+    },
+    likesCount:{
+        type:Number,
+        default:0
+    },
+    repliesCount:{
+        type:Number,
+        default:0
     }
+} , {
+    timestamps:true
 })
 
-export const CommentModel = mongoose.model<IComment>("Comment" , commentSchema)
+commentSchema.index({
+    postId:1,
+    parentCommentId:1,
+    createdAt:1
+})
+commentSchema.plugin(mongoosePaginate)
+
+export const CommentModel = mongoose.model<IComment, PaginateModel<IComment>>("Comment" , commentSchema)
