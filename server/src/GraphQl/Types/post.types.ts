@@ -1,6 +1,5 @@
 import { GraphQLBoolean, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
 import { UserType } from "./user.types.js";
-import { CommentModel } from "../../DB/Models/index.js";
 import { formatRelativeDate } from "../../Utils/index.js";
 
 export const PostType: GraphQLObjectType = new GraphQLObjectType({
@@ -10,16 +9,6 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
         describtion: { type: GraphQLString },
         attachments: { type: new GraphQLList(GraphQLString) },
         allowComments: { type: GraphQLBoolean },
-        commentsCount: {
-            type: GraphQLInt,
-            resolve: async (post: any) => {
-                if (typeof post.commentsCount === "number") return post.commentsCount;
-                return await CommentModel.countDocuments({
-                    refId: post._id,
-                    onModel: "Post"
-                });
-            }
-        },
         owner: {
             type: UserType,
             resolve: (post: any) => post.ownerId

@@ -67,6 +67,8 @@ export const profileService = {
       query: GET_PROFILE_QUERY,
       variables: { page, limit },
     });
+    console.log(response);
+    
     
 
     if (response.data?.errors && response.data.errors.length > 0) {
