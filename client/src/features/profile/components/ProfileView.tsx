@@ -36,15 +36,18 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
     ? gqlProfile.posts.docs.map((p) => ({
         id: p._id,
         author: {
+          id: currentUser?._id,
           name: `${currentUser?.firstName} ${currentUser?.lastName}`.trim(),
           avatar: currentUser?.profilePicture || "/default-avatar-profile.webp",
           date: formatRelativeDate(p.createdAt),
         },
         content: p.describtion || "",
         images: p.attachments || [],
-        likes: 0,
-        comments: p.commentsCount ?? 0,
+        likes: p.likesCount ?? 0,
+        comments: p.commentsCount ?? (p.comments?.length ?? 0),
         shares: 0,
+        allowComments: p.allowComments !== false,
+        commentsList: (p.comments as any) || [],
       }))
     : (!gqlProfile && !isLoading ? initialData.posts : []);
 

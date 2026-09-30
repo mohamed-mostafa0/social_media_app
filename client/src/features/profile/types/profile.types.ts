@@ -38,9 +38,12 @@ export interface VideoItem {
   views?: string;
 }
 
+import { CommentItem } from "@/features/posts/types/comment.types";
+
 export interface ProfilePost {
   id: string;
   author: {
+    id?: string;
     name: string;
     avatar: string;
     date: string;
@@ -52,6 +55,9 @@ export interface ProfilePost {
   likes: number | string;
   comments: number | string;
   shares?: number | string;
+  allowComments?: boolean;
+  commentsList?: CommentItem[];
+  isLiked?: boolean;
 }
 
 export interface UserProfileData {

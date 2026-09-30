@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { useState, useRef } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
 import { FiMoreVertical, FiHeart, FiMessageCircle, FiBookmark, FiShare2 } from "react-icons/fi";
 import { PostAuthor } from "../types/post.types";
+import { CommentItem as CommentItemType } from "../types/comment.types";
+import { PostComments } from "./comments";
 
 export interface PostCardProps {
   id?: string | number;
@@ -16,9 +18,25 @@ export interface PostCardProps {
   likes: string | number;
   comments: string | number;
   shares?: string | number;
+  allowComments?: boolean;
+  commentsList?: CommentItemType[];
+  authorId?: string;
 }
 
-export function PostCard({ author, content, tags, images, likes, comments, shares = "0" }: PostCardProps) {
+export function PostCard({
+  id,
+  author,
+  content,
+  tags,
+  images,
+  likes,
+  comments,
+  shares = "0",
+  allowComments = true,
+  commentsList = [],
+  authorId,
+}: PostCardProps) {
+  const [showComments, setShowComments] = useState(false);
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -107,8 +125,14 @@ export function PostCard({ author, content, tags, images, likes, comments, share
             <FiHeart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
             <span className="text-xs font-semibold">{likes} Like</span>
           </button>
-          <button className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition-colors group">
-            <FiMessageCircle className="w-4 h-4 group-hover:fill-blue-500 transition-colors" />
+          <button
+            onClick={() => setShowComments((prev) => !prev)}
+            type="button"
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer group ${
+              showComments ? "text-blue-600 font-semibold" : "text-gray-500 hover:text-blue-500"
+            }`}
+          >
+            <FiMessageCircle className={`w-4 h-4 transition-colors ${showComments ? "fill-blue-50 text-blue-600" : "group-hover:fill-blue-500"}`} />
             <span className="text-xs font-semibold">{comments} Comment</span>
           </button>
           <button className="flex items-center gap-1.5 text-gray-500 hover:text-green-500 transition-colors group">
@@ -120,6 +144,19 @@ export function PostCard({ author, content, tags, images, likes, comments, share
           <FiBookmark className="w-5 h-5" />
         </button>
       </div>
+
+      {id && (
+        <AnimatePresence>
+          {showComments && (
+            <PostComments
+              postId={String(id)}
+              allowComments={allowComments}
+              comments={commentsList}
+              postOwnerId={authorId}
+            />
+          )}
+        </AnimatePresence>
+      )}
     </motion.article>
   );
 }

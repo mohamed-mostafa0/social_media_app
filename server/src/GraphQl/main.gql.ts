@@ -7,7 +7,7 @@ export const MainSchema = new GraphQLSchema({
     query: new GraphQLObjectType({
         name: "QueryMainSchema",
         fields: {
-            ...userQuery.register(),
+            ...userQuery.getProfile(),
             ...postQuery.register()
         }
     }),

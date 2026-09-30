@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { AnimatePresence } from "framer-motion";
 import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2, FiTrash2 } from "react-icons/fi";
 import { ProfilePost } from "../types/profile.types";
-import { useDeletePost } from "@/features/posts";
+import { useDeletePost, PostComments } from "@/features/posts";
 import { useClickOutside } from "@/hooks";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
@@ -20,7 +21,8 @@ export function ProfilePostCard({
   onComment,
   onShare,
 }: ProfilePostCardProps) {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(Boolean(post.isLiked));
+  const [showComments, setShowComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -29,14 +31,20 @@ export function ProfilePostCard({
   useClickOutside(menuRef, () => setShowMenu(false), showMenu);
 
   const [likesCount, setLikesCount] = useState(
-    typeof post.likes === "number" ? post.likes : parseInt(String(post.likes)) || 1400
+    typeof post.likes === "number" ? post.likes : parseInt(String(post.likes)) || 0
   );
 
-  
+  useEffect(() => {
+    setIsLiked(Boolean(post.isLiked));
+    setLikesCount(
+      typeof post.likes === "number" ? post.likes : parseInt(String(post.likes)) || 0
+    );
+  }, [post.isLiked, post.likes]);
 
   const handleLike = () => {
-    setIsLiked((prev) => !prev);
-    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+    const nextIsLiked = !isLiked;
+    setIsLiked(nextIsLiked);
+    setLikesCount((prev) => (nextIsLiked ? prev + 1 : Math.max(0, prev - 1)));
     onLike?.(post.id);
   };
 
@@ -189,11 +197,16 @@ export function ProfilePostCard({
           </button>
 
           <button
-            onClick={() => onComment?.(post.id)}
+            onClick={() => {
+              setShowComments((prev) => !prev);
+              onComment?.(post.id);
+            }}
             type="button"
-            className="flex items-center gap-1.5 text-gray-500 hover:text-blue-600 transition-colors cursor-pointer"
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+              showComments ? "text-blue-600 font-semibold" : "text-gray-500 hover:text-blue-600"
+            }`}
           >
-            <FiMessageCircle className="w-4 h-4" />
+            <FiMessageCircle className={`w-4 h-4 ${showComments ? "fill-blue-50 text-blue-600" : ""}`} />
             <span>{post.comments}</span>
           </button>
 
@@ -209,6 +222,17 @@ export function ProfilePostCard({
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showComments && (
+          <PostComments
+            postId={String(post.id)}
+            allowComments={post.allowComments}
+            comments={post.commentsList}
+            postOwnerId={post.author.id}
+          />
+        )}
+      </AnimatePresence>
 
       <ConfirmModal
         isOpen={isConfirmOpen}

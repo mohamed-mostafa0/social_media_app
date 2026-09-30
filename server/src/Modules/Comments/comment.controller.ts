@@ -6,6 +6,6 @@ export const CommentController = Router()
 
 
 
-CommentController.post("/:postId/comment" , authentication , uploadImage().single("attachment") , CommentService.addComment)
-CommentController.delete("/comment/:commentId" , authentication , CommentService.deleteComment)
-CommentController.patch("/comment/:commentId", authentication, uploadImage().single("attachment"), CommentService.editComment)
+CommentController.post("/:postId" , authentication , uploadImage().single("attachment") , CommentService.addComment)
+CommentController.delete("/:commentId" , authentication , CommentService.deleteComment)
+CommentController.patch("/:commentId", authentication, uploadImage().single("attachment"), CommentService.editComment)

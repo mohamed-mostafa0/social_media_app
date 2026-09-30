@@ -1,6 +1,8 @@
 import { GraphQLBoolean, GraphQLID, GraphQLInt, GraphQLList, GraphQLObjectType, GraphQLString } from "graphql";
 import { UserType } from "./user.types.js";
 import { formatRelativeDate } from "../../Utils/index.js";
+import { CommentType } from "./comment.types.js";
+import { CommentModel } from "../../DB/Models/comment.model.js";
 
 export const PostType: GraphQLObjectType = new GraphQLObjectType({
     name: "PostType",
@@ -9,6 +11,8 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
         describtion: { type: GraphQLString },
         attachments: { type: new GraphQLList(GraphQLString) },
         allowComments: { type: GraphQLBoolean },
+        likesCount:{type:GraphQLInt},
+        commentsCount:{type:GraphQLInt},
         owner: {
             type: UserType,
             resolve: (post: any) => post.ownerId
@@ -20,6 +24,14 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
         createdAt: {
             type: GraphQLString,
             resolve: (post: any) => formatRelativeDate(post.createdAt)
+        },
+        comments:{
+            type: new GraphQLList(CommentType),
+            resolve:async(post)=>{
+                return await CommentModel.find({
+                    postId:post._id , parentCommentId:null
+                }).sort({createdAt:-1}).populate("ownerId")
+            }
         }
     })
 })

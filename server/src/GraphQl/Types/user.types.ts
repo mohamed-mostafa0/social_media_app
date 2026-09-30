@@ -15,9 +15,6 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
         followersCount: { type: GraphQLInt },
         followingCount: { type: GraphQLInt },
         postsCount: { type: GraphQLInt },
-        posts: {
-            type: PaginatedPostType,
-            resolve: (user: any) => user.posts
-        }
+        posts: {type: PaginatedPostType}
     })
 })

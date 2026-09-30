@@ -8,7 +8,7 @@ class UserQuery {
 
     private userResolver: UserResolver = new UserResolver()
 
-    register() {
+    getProfile() {
         return {
             getProfile: {
                 type: UserType,

@@ -1,13 +1,39 @@
 import { apiClient } from "@/lib/axios";
 import { UpdateProfilePayload, User } from "@/types/user.types";
 
+
+export interface GraphQlUserType {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  profilePicture?: string;
+}
+
+export interface GraphQLComment {
+  _id: string;
+  content: string;
+  likesCount?: number;
+  repliesCount?: number;
+  createdAt?: string;
+  isLiked?: boolean;
+  attachment?: {
+    url: string;
+    publicId?: string;
+  };
+  ownerId: GraphQlUserType;
+  replies?: GraphQLComment[];
+}
+
 export interface GraphQLPostDoc {
   _id: string;
   describtion?: string;
   attachments?: string[];
   allowComments?: boolean;
+  likesCount?: number;
   commentsCount?: number;
   createdAt?: string;
+  tags?: GraphQlUserType[];
+  comments?: GraphQLComment[];
 }
 
 export interface GraphQLUserProfile {
@@ -48,13 +74,58 @@ export const GET_PROFILE_QUERY = `
         limit
         totalPages
         page
+        pagingCounter
+        hasPrevPage
+        hasNextPage
+        prevPage
+        nextPage
         docs {
           _id
           describtion
           attachments
           allowComments
+          likesCount
           commentsCount
           createdAt
+          tags {
+            _id
+            firstName
+            lastName
+            profilePicture
+          }
+          comments {
+            _id
+            content
+            likesCount
+            repliesCount
+            createdAt
+            isLiked
+            attachment {
+              url
+            }
+            ownerId {
+              _id
+              firstName
+              lastName
+              profilePicture
+            }
+            replies {
+              _id
+              content
+              likesCount
+              createdAt
+              isLiked
+              attachment {
+                url
+              }
+              ownerId {
+                _id
+                firstName
+                lastName
+                profilePicture
+              }
+            }
+          }
         }
       }
     }
