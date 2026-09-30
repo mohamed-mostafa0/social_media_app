@@ -3,6 +3,8 @@ import { UserType } from "./user.types.js";
 import { formatRelativeDate } from "../../Utils/index.js";
 import { CommentType } from "./comment.types.js";
 import { CommentModel } from "../../DB/Models/comment.model.js";
+import { LikeModel } from "../../DB/Models/like.model.js";
+import { LikeOnModelEnum } from "../../Common/index.js";
 
 export const PostType: GraphQLObjectType = new GraphQLObjectType({
     name: "PostType",
@@ -31,6 +33,20 @@ export const PostType: GraphQLObjectType = new GraphQLObjectType({
                 return await CommentModel.find({
                     postId:post._id , parentCommentId:null
                 }).sort({createdAt:-1}).populate("ownerId")
+            }
+        },
+        isLiked:{
+            type:GraphQLBoolean,
+            resolve:async(post:any , args , context )=>{
+                const userId = context.user?.user?._id
+                if(!userId) return false
+                return Boolean (
+                    await LikeModel.exists({
+                        userId,
+                        onModel:LikeOnModelEnum.Post,
+                        refId:post._id
+                    })
+                )
             }
         }
     })

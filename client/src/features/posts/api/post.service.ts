@@ -15,5 +15,10 @@ export const postService = {
   deletePost:async(postId:string)=>{
     const response = await apiClient.delete(`/post/${postId}`)
     return response.data
-  }
+  },
+
+  togglePostLike: async (postId: string) => {
+    const response = await apiClient.post(`/like/${postId}`, { onModel: "Post" });
+    return response.data;
+  },
 };

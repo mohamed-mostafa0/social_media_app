@@ -48,6 +48,7 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
         shares: 0,
         allowComments: p.allowComments !== false,
         commentsList: (p.comments as any) || [],
+        isLiked: Boolean(p.isLiked),
       }))
     : (!gqlProfile && !isLoading ? initialData.posts : []);
 

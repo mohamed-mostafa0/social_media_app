@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2, FiTrash2 } from "react-icons/fi";
 import { ProfilePost } from "../types/profile.types";
-import { useDeletePost, PostComments } from "@/features/posts";
+import { useDeletePost, useTogglePostLike, PostComments } from "@/features/posts";
 import { useClickOutside } from "@/hooks";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
@@ -27,6 +27,7 @@ export function ProfilePostCard({
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { mutate: deletePost, isPending: isDeleting } = useDeletePost();
+  const { mutate: togglePostLike } = useTogglePostLike();
 
   useClickOutside(menuRef, () => setShowMenu(false), showMenu);
 
@@ -45,6 +46,12 @@ export function ProfilePostCard({
     const nextIsLiked = !isLiked;
     setIsLiked(nextIsLiked);
     setLikesCount((prev) => (nextIsLiked ? prev + 1 : Math.max(0, prev - 1)));
+    togglePostLike(post.id, {
+      onError: () => {
+        setIsLiked(!nextIsLiked);
+        setLikesCount((prev) => (nextIsLiked ? Math.max(0, prev - 1) : prev + 1));
+      },
+    });
     onLike?.(post.id);
   };
 

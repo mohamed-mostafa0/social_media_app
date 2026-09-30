@@ -32,3 +32,16 @@ export const useDeletePost = ()=>{
     })
 
 }
+
+export const useTogglePostLike = ()=>{
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn:(postId:string)=>postService.togglePostLike(postId),
+    onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:PROFILE_QUERY_KEY})
+    },
+    onError: (error) => {
+      console.error("Failed to toggle post like:", error);
+    },
+  })
+}

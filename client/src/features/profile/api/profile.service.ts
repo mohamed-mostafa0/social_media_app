@@ -34,6 +34,7 @@ export interface GraphQLPostDoc {
   createdAt?: string;
   tags?: GraphQlUserType[];
   comments?: GraphQLComment[];
+  isLiked?: boolean;
 }
 
 export interface GraphQLUserProfile {
@@ -86,6 +87,7 @@ export const GET_PROFILE_QUERY = `
           allowComments
           likesCount
           commentsCount
+          isLiked
           createdAt
           tags {
             _id

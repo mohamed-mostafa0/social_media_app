@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
@@ -8,6 +8,7 @@ import { FiMoreVertical, FiHeart, FiMessageCircle, FiBookmark, FiShare2 } from "
 import { PostAuthor } from "../types/post.types";
 import { CommentItem as CommentItemType } from "../types/comment.types";
 import { PostComments } from "./comments";
+import { useTogglePostLike } from "../hooks/usePost";
 
 export interface PostCardProps {
   id?: string | number;
@@ -21,6 +22,8 @@ export interface PostCardProps {
   allowComments?: boolean;
   commentsList?: CommentItemType[];
   authorId?: string;
+  isLiked?: boolean;
+  onLike?: (id: string | number) => void;
 }
 
 export function PostCard({
@@ -35,10 +38,37 @@ export function PostCard({
   allowComments = true,
   commentsList = [],
   authorId,
+  isLiked = false,
+  onLike,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
+  const [isLikedState, setIsLikedState] = useState(Boolean(isLiked));
+  const [likesCount, setLikesCount] = useState(
+    typeof likes === "number" ? likes : parseInt(String(likes)) || 0
+  );
+  const { mutate: togglePostLike } = useTogglePostLike();
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
+  useEffect(() => {
+    setIsLikedState(Boolean(isLiked));
+    setLikesCount(typeof likes === "number" ? likes : parseInt(String(likes)) || 0);
+  }, [isLiked, likes]);
+
+  const handleLike = () => {
+    const nextIsLiked = !isLikedState;
+    setIsLikedState(nextIsLiked);
+    setLikesCount((prev) => (nextIsLiked ? prev + 1 : Math.max(0, prev - 1)));
+    if (id) {
+      togglePostLike(String(id), {
+        onError: () => {
+          setIsLikedState(!nextIsLiked);
+          setLikesCount((prev) => (nextIsLiked ? Math.max(0, prev - 1) : prev + 1));
+        },
+      });
+    }
+    if (id && onLike) onLike(id);
+  };
 
   return (
     <motion.article 
@@ -121,9 +151,19 @@ export function PostCard({
 
       <div className="flex items-center justify-between pt-2">
         <div className="flex gap-6">
-          <button className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 transition-colors group">
-            <FiHeart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
-            <span className="text-xs font-semibold">{likes} Like</span>
+          <button
+            type="button"
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer group ${
+              isLikedState ? "text-rose-600 font-semibold" : "text-gray-500 hover:text-red-500"
+            }`}
+          >
+            <FiHeart
+              className={`w-4 h-4 transition-colors ${
+                isLikedState ? "fill-rose-500 text-rose-500" : "group-hover:fill-red-500"
+              }`}
+            />
+            <span className="text-xs font-semibold">{likesCount} Like</span>
           </button>
           <button
             onClick={() => setShowComments((prev) => !prev)}
