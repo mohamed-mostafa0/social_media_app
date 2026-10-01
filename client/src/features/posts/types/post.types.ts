@@ -23,7 +23,14 @@ export interface CreatePostPayload {
   attachments?: string[];
   tags?: string[];
   allowComments?: boolean;
-  ownerId?:string;
+  ownerId?: string;
+}
+
+export interface EditPostPayload {
+  describtion?: string;
+  allowComments?: boolean;
+  removeAttachments?: boolean | string[];
+  images?: File[];
 }
 
 

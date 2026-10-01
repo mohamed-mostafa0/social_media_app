@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence } from "framer-motion";
-import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2, FiTrash2 } from "react-icons/fi";
+import { FiMoreHorizontal, FiMapPin, FiHeart, FiMessageCircle, FiShare2, FiTrash2, FiEdit2 } from "react-icons/fi";
 import { ProfilePost } from "../types/profile.types";
-import { useDeletePost, useTogglePostLike, PostComments } from "@/features/posts";
+import { useDeletePost, useTogglePostLike, PostComments, EditPostModal } from "@/features/posts";
 import { useClickOutside } from "@/hooks";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
@@ -25,6 +25,7 @@ export function ProfilePostCard({
   const [showComments, setShowComments] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { mutate: deletePost, isPending: isDeleting } = useDeletePost();
   const { mutate: togglePostLike } = useTogglePostLike();
@@ -147,6 +148,18 @@ export function ProfilePostCard({
                 type="button"
                 onClick={() => {
                   setShowMenu(false);
+                  setIsEditOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <FiEdit2 className="w-3.5 h-3.5 text-gray-500" />
+                <span>Edit Post</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
                   setIsConfirmOpen(true);
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
@@ -240,6 +253,12 @@ export function ProfilePostCard({
           />
         )}
       </AnimatePresence>
+
+      <EditPostModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        post={post}
+      />
 
       <ConfirmModal
         isOpen={isConfirmOpen}
