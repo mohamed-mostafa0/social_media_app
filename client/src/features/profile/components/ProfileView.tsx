@@ -19,21 +19,23 @@ import { EditProfileModal } from "./EditProfileModal";
 
 interface ProfileViewProps {
   initialData?: UserProfileData;
+  userId?: string;
 }
 
-export function ProfileView({ initialData = defaultProfileData }: ProfileViewProps) {
+export function ProfileView({ initialData = defaultProfileData, userId }: ProfileViewProps) {
   const loggedInUser = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState("posts");
   const [followModalType, setFollowModalType] = useState<"followers" | "following" | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editModalTab, setEditModalTab] = useState<"general" | "location" | "education" | "socials">("general");
 
-  const { data: gqlProfile, isLoading } = useGetProfile();
+  const { data: gqlProfile, isLoading } = useGetProfile(userId);
 
-  const currentUser = gqlProfile || loggedInUser;
+  const isSelf = gqlProfile?.isSelf ?? (!userId || userId === loggedInUser?._id);
+  const currentUser = gqlProfile || (isSelf ? loggedInUser : null);
 
-  const profilePosts: ProfilePost[] = gqlProfile?.posts?.docs
-    ? gqlProfile.posts.docs.map((p) => ({
+  const profilePosts: ProfilePost[] | undefined = 
+     gqlProfile?.posts?.docs.map((p) => ({
         id: p._id,
         author: {
           id: currentUser?._id,
@@ -49,34 +51,48 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
         allowComments: p.allowComments !== false,
         commentsList: (p.comments as any) || [],
         isLiked: Boolean(p.isLiked),
-      }))
-    : (!gqlProfile && !isLoading ? initialData.posts : []);
+      }));
 
-  const locationText = loggedInUser?.location
-    ? [loggedInUser.location.city, loggedInUser.location.governrate, loggedInUser.location.country]
+  const locationObj = currentUser?.location || (isSelf ? loggedInUser?.location : null);
+  const locationText = locationObj
+    ? [locationObj.city, locationObj.governrate, locationObj.country]
         .filter(Boolean)
         .join(", ")
     : null;
 
+  const educationObj = currentUser?.education || (isSelf ? loggedInUser?.education : null);
   const educationParts = [
-    loggedInUser?.education?.major,
-    loggedInUser?.education?.college,
-    loggedInUser?.education?.university,
+    educationObj?.major,
+    educationObj?.college,
+    educationObj?.university,
   ].filter(Boolean);
 
   const educationText = educationParts.length > 0 ? educationParts.join(" • ") : null;
 
-  const birthdayText = loggedInUser?.DOB
-    ? new Date(loggedInUser.DOB).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+  const dobValue = currentUser?.DOB || (isSelf ? loggedInUser?.DOB : null);
+  const birthdayText = dobValue
+    ? new Date(dobValue).toLocaleDateString("en-US", { month: "long", day: "numeric" })
     : null;
 
-  const userSocials = loggedInUser?.socialLinks?.length ? loggedInUser.socialLinks : [];
+  const userSocials = currentUser?.socialLinks?.length
+    ? currentUser.socialLinks
+    : isSelf && loggedInUser?.socialLinks?.length
+    ? loggedInUser.socialLinks
+    : [];
+
+  const followStatus = ((gqlProfile?.followStatus || "NONE").toUpperCase() as "ACCEPTED" | "PENDING" | "NONE");
+  const isPrivate = Boolean(currentUser?.isPrivate);
+  const isLocked = !isSelf && isPrivate && followStatus !== "ACCEPTED";
 
   const profile: UserProfileData = {
     ...initialData,
-    name: currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : "",
+    id: currentUser?._id || userId || initialData.id,
+    name: currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : "User Profile",
     avatar: currentUser?.profilePicture || "/default-avatar-profile.webp",
     coverImage: currentUser?.coverPicture || initialData.coverImage,
+    isSelf,
+    isPrivate,
+    followStatus,
     info: {
       location: locationText || "",
       education: educationText || "",
@@ -92,10 +108,13 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
       followingCount: currentUser?.followingCount ?? 0,
       postsCount: currentUser?.postsCount ?? (gqlProfile?.posts?.totalDocs || 0),
     },
-    posts: profilePosts,
+    posts: profilePosts || [],
+    photos: isLocked ? [] : initialData.photos,
+    videos: isLocked ? [] : initialData.videos,
   };
 
   const handleOpenEdit = (tab: "general" | "location" | "education" | "socials" = "general") => {
+    if (!isSelf) return;
     setEditModalTab(tab);
     setIsEditModalOpen(true);
   };
@@ -106,14 +125,17 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
         <div className="rounded-none sm:rounded-2xl overflow-hidden bg-white shadow-xs border-0 sm:border border-gray-100">
           <ProfileHeader
             profile={profile}
-            onEditProfile={() => handleOpenEdit("general")}
+            onEditProfile={isSelf ? () => handleOpenEdit("general") : undefined}
+            onEditCover={isSelf ? () => handleOpenEdit("general") : undefined}
+            onEditAvatar={isSelf ? () => handleOpenEdit("general") : undefined}
           />
           <ProfileStatsBar
             stats={profile.stats}
+            isSelf={isSelf}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             onOpenFollowModal={setFollowModalType}
-            onOpenSettings={() => handleOpenEdit("general")}
+            onOpenSettings={isSelf ? () => handleOpenEdit("general") : undefined}
           />
         </div>
       </div>
@@ -125,39 +147,54 @@ export function ProfileView({ initialData = defaultProfileData }: ProfileViewPro
               location={locationText}
               birthday={birthdayText}
               education={educationText}
-              onEditSection={handleOpenEdit}
+              onEditSection={isSelf ? handleOpenEdit : undefined}
             />
             <ProfileSocialLinks
               socials={userSocials}
-              onAddSocials={() => handleOpenEdit("socials")}
+              onAddSocials={isSelf ? () => handleOpenEdit("socials") : undefined}
             />
-            <ProfileMusicCard tracks={profile.music} />
+            {!isLocked && <ProfileMusicCard tracks={profile.music} />}
           </div>
 
           <div className="lg:col-span-6 order-1 lg:order-2">
-            <ProfileFeed posts={profile.posts} isLoading={isLoading} />
+            <ProfileFeed
+              posts={profile.posts}
+              isLoading={isLoading}
+              isSelf={isSelf}
+              isPrivate={isPrivate}
+              followStatus={followStatus}
+            />
           </div>
 
           <div className="lg:col-span-3 space-y-6 order-3">
-            <ProfilePhotosCard photos={profile.photos} />
-            <ProfileVideosCard videos={profile.videos} />
+            {!isLocked && (
+              <>
+                <ProfilePhotosCard photos={profile.photos} />
+                <ProfileVideosCard videos={profile.videos} />
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <FollowersModal
-        isOpen={followModalType !== null}
-        onClose={() => setFollowModalType(null)}
-        initialTab={followModalType || "followers"}
-        followersCount={profile.stats.followersCount}
-        followingCount={profile.stats.followingCount}
-      />
+      {isSelf && (
+        <>
+          <FollowersModal
+            isOpen={followModalType !== null}
+            onClose={() => setFollowModalType(null)}
+            initialTab={followModalType || "followers"}
+            followersCount={profile.stats.followersCount}
+            followingCount={profile.stats.followingCount}
+          />
 
-      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        initialTab={editModalTab}
-      />
+          <EditProfileModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            initialTab={editModalTab}
+          />
+        </>
+      )}
     </div>
   );
 }
+

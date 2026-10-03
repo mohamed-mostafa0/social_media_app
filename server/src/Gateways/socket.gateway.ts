@@ -19,10 +19,10 @@ io.on("connection" , (socket:Socket)=>{
     
 })
 
-io.use((socket:Socket , next:Function)=>{
-    console.log(socket);
+// io.use((socket:Socket , next:Function)=>{
+//     console.log(socket);
     
-})
+// })
 
 }
 

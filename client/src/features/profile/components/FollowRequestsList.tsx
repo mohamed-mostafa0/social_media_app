@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar } from "@/components/ui/Avatar";
 import { FiCheck, FiX, FiUserPlus, FiClock } from "react-icons/fi";
@@ -114,7 +115,10 @@ export function FollowRequestsList({ compact = false }: FollowRequestsListProps)
                   : "bg-white hover:shadow-md border border-gray-100 p-4"
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <Link
+                href={`/profile/${requester._id}`}
+                className="flex items-center gap-3 min-w-0 group cursor-pointer"
+              >
                 <Avatar
                   size={compact ? "sm" : "md"}
                   src={requester.profilePicture}
@@ -122,7 +126,7 @@ export function FollowRequestsList({ compact = false }: FollowRequestsListProps)
                   className="ring-2 ring-white shadow-xs shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-gray-900 truncate hover:text-blue-600 transition-colors">
+                  <p className="text-xs font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                     {fullName}
                   </p>
                   <p className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5 truncate">
@@ -130,7 +134,8 @@ export function FollowRequestsList({ compact = false }: FollowRequestsListProps)
                     Requested to follow you
                   </p>
                 </div>
-              </div>
+              </Link>
+
 
               <div className="flex items-center gap-1.5 shrink-0">
                 <motion.button

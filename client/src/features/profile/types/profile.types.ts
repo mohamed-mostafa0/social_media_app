@@ -64,13 +64,17 @@ export interface UserProfileData {
   id: string;
   name: string;
   title: string;
-  avatar: string ;
+  avatar: string;
   coverImage: string;
-  stats: ProfileStats
+  stats: ProfileStats;
   info: ProfileInfo;
   socials: SocialLink[];
   music: MusicTrack[];
   photos: PhotoItem[];
   videos: VideoItem[];
   posts: ProfilePost[];
+  isSelf?: boolean;
+  followStatus?: "ACCEPTED" | "PENDING" | "NONE";
+  isPrivate?: boolean;
 }
+

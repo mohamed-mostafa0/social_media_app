@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiSearch, FiUsers, FiUserCheck, FiUserX, FiLoader, FiUserPlus } from "react-icons/fi";
@@ -250,23 +251,28 @@ export function FollowersModal({
                       key={u._id}
                       className="flex items-center justify-between gap-3 pt-2.5 pb-1 first:pt-0"
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar
-                          size="md"
-                          src={u.profilePicture || "/default-avatar-profile.webp"}
-                          alt={fullName}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs sm:text-sm font-bold text-gray-900 truncate hover:text-blue-600 transition-colors cursor-pointer">
-                            {fullName}
-                          </h4>
-                          {u.email && (
-                            <p className="text-[11px] text-gray-400 truncate mt-0.5">
-                              {u.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                        <Link
+                          href={`/profile/${u._id}`}
+                          onClick={onClose}
+                          className="flex items-center gap-3 min-w-0 flex-1 group"
+                        >
+                          <Avatar
+                            size="md"
+                            src={u.profilePicture || "/default-avatar-profile.webp"}
+                            alt={fullName}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                              {fullName}
+                            </h4>
+                            {u.email && (
+                              <p className="text-[11px] text-gray-400 truncate mt-0.5">
+                                {u.email}
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+
 
                       {activeTab === "following" ? (
                         <button

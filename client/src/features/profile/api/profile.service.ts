@@ -45,9 +45,29 @@ export interface GraphQLUserProfile {
   profilePicture?: string;
   coverPicture?: string;
   gender?: string;
+  DOB?: string;
+  location?: {
+    city?: string;
+    governrate?: string;
+    country?: string;
+    street?: string;
+  };
+  education?: {
+    university?: string;
+    college?: string;
+    major?: string;
+    graduationYear?: number;
+  };
+  socialLinks?: Array<{
+    platformName?: string;
+    link?: string;
+  }>;
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  isPrivate?: boolean;
+  isSelf?: boolean;
+  followStatus?: "ACCEPTED" | "PENDING" | "NONE";
   posts?: {
     totalDocs: number;
     limit: number;
@@ -58,8 +78,8 @@ export interface GraphQLUserProfile {
 }
 
 export const GET_PROFILE_QUERY = `
-  query GetProfile($page: Int, $limit: Int) {
-    getProfile(page: $page, limit: $limit) {
+  query GetProfile($userId: ID, $page: Int, $limit: Int) {
+    getProfile(userId: $userId, page: $page, limit: $limit) {
       _id
       firstName
       lastName
@@ -67,9 +87,29 @@ export const GET_PROFILE_QUERY = `
       profilePicture
       coverPicture
       gender
+      DOB
+      location {
+        city
+        governrate
+        country
+        street
+      }
+      education {
+        university
+        college
+        major
+        graduationYear
+      }
+      socialLinks {
+        platformName
+        link
+      }
       followersCount
       followingCount
       postsCount
+      isPrivate
+      isSelf
+      followStatus
       posts {
         totalDocs
         limit
@@ -135,14 +175,11 @@ export const GET_PROFILE_QUERY = `
 `;
 
 export const profileService = {
-  getProfile: async (page = 1, limit = 10): Promise<GraphQLUserProfile> => {
+  getProfile: async (userId?: string, page = 1, limit = 10): Promise<GraphQLUserProfile> => {
     const response = await apiClient.post("/graphql", {
       query: GET_PROFILE_QUERY,
-      variables: { page, limit },
+      variables: { userId: userId || null, page, limit },
     });
-    console.log(response);
-    
-    
 
     if (response.data?.errors && response.data.errors.length > 0) {
       throw new Error(
@@ -158,4 +195,5 @@ export const profileService = {
     return response.data?.data?.data || response.data?.data;
   },
 };
+
 

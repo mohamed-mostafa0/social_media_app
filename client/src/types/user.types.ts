@@ -37,7 +37,9 @@ export interface User {
   followingCount?: number;
   postsCount?: number;
   isVerified?: boolean;
+  isPrivate?: boolean;
 }
+
 
 export interface UpdateProfilePayload {
   firstName?: string;

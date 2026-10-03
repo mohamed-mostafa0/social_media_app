@@ -6,6 +6,7 @@ import { ProfileStats } from "../types/profile.types";
 
 interface ProfileStatsBarProps {
   stats: ProfileStats;
+  isSelf?: boolean;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   onOpenSettings?: () => void;
@@ -14,6 +15,7 @@ interface ProfileStatsBarProps {
 
 export function ProfileStatsBar({
   stats,
+  isSelf = true,
   activeTab = "posts",
   onTabChange,
   onOpenSettings,
@@ -62,17 +64,20 @@ export function ProfileStatsBar({
           })}
         </div>
 
-        <div className="flex items-center justify-end">
-          <button
-            onClick={onOpenSettings}
-            type="button"
-            className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer font-medium"
-          >
-            <span>Settings</span>
-            <FiSettings className="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
+        {isSelf && (
+          <div className="flex items-center justify-end">
+            <button
+              onClick={onOpenSettings}
+              type="button"
+              className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer font-medium"
+            >
+              <span>Settings</span>
+              <FiSettings className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
