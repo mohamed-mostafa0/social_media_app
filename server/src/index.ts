@@ -10,6 +10,8 @@ import { createHandler } from 'graphql-http/lib/use/express'
 import { MainSchema } from './GraphQl/main.gql.js'
 import { authentication } from './Middlewares/authentication.middleware.js'
 import type { IRequest } from './Common/index.js'
+import { ioIntializer } from './Gateways/socket.gateway.js'
+
 
 
 const app = express()
@@ -17,7 +19,7 @@ dbConnection()
 app.use(express.json())
 
 const corsOptions = {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_ORIGIN,
     credentials: true,
 }
 
@@ -48,7 +50,9 @@ app.use((err: Error | HttpException | null, req: Request, res: Response, next: N
 })
 
 const port: number | string = process.env.PORT || 3000
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`server started on port ${port}`);
 
 })
+
+ioIntializer(server , corsOptions)
