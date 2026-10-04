@@ -4,6 +4,7 @@ import { FiCamera, FiPlus, FiEdit2, FiUserCheck, FiUserPlus, FiClock, FiMessageS
 import { UserProfileData } from "../types/profile.types";
 import { useToggleFollow } from "../hooks/useFollowingOrFollowers";
 import { useState, useEffect } from "react";
+import { useChatStore } from "@/features/chat";
 
 interface ProfileHeaderProps {
   profile: UserProfileData;
@@ -15,10 +16,11 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ profile, onEditCover, onEditAvatar, onEditProfile }: ProfileHeaderProps) {
   const isSelf = profile.isSelf !== false;
   const { mutate: toggleFollow, isPending: isFollowPending } = useToggleFollow();
+  const openChat = useChatStore((state) => state.openChat);
   const [isHoveringFollowing, setIsHoveringFollowing] = useState(false);
+
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
 
-  // Reset optimistic state when props change
   useEffect(() => {
     setOptimisticStatus(null);
   }, [profile.followStatus, profile.id]);
@@ -30,7 +32,6 @@ export function ProfileHeader({ profile, onEditCover, onEditAvatar, onEditProfil
   const handleFollowClick = () => {
     if (!profile.id || isFollowPending) return;
 
-    // Optimistically update button text immediately
     const nextStatus = isFollowing || isPending
       ? "NONE"
       : profile.isPrivate
@@ -129,11 +130,19 @@ export function ProfileHeader({ profile, onEditCover, onEditAvatar, onEditProfil
 
               <button
                 type="button"
+                onClick={() =>
+                  openChat({
+                    id: profile.id,
+                    name: profile.name,
+                    avatar: profile.avatar,
+                  })
+                }
                 className="p-2.5 sm:px-3.5 sm:py-2 bg-white/90 hover:bg-white text-gray-800 rounded-full sm:rounded-xl text-xs font-semibold flex items-center gap-2 transition-all duration-200 cursor-pointer shadow-lg hover:shadow-xl backdrop-blur-md"
               >
                 <FiMessageSquare className="w-4 h-4 text-blue-600" />
                 <span className="hidden sm:inline">Message</span>
               </button>
+
             </>
           )}
         </div>

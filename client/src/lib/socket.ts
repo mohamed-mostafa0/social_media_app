@@ -29,10 +29,15 @@ export const getSocket = (): AppSocket => {
         cb({ token });
       },
     });
+
+    if (typeof window !== "undefined") {
+      (window as any).socket = socket;
+    }
   }
 
   return socket;
 };
+
 
 export const connectSocket = (): AppSocket | null => {
   if (typeof window === "undefined") return null;

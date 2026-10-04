@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { TopNavbar } from "./TopNavbar";
+import { ChatWidget } from "@/features/chat";
 
 interface FeedLayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,9 @@ export function FeedLayout({ children }: FeedLayoutProps) {
           </div>
         </div>
       )}
+
+      <ChatWidget />
     </div>
   );
 }
+

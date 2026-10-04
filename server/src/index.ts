@@ -37,6 +37,8 @@ app.use("/api/profile", controllers.profileController)
 app.use("/api/comment", controllers.CommentController)
 app.use("/api/post", controllers.PostController)
 app.use("/api/like", controllers.LikeController)
+app.use("/api/chat", controllers.chatController)
+
 
 
 app.use((err: Error | HttpException | null, req: Request, res: Response, next: NextFunction) => {

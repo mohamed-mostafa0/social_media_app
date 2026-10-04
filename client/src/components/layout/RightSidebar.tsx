@@ -2,31 +2,23 @@
 
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
-import { FiEdit, FiSearch, FiMoreVertical, FiCalendar, FiGift } from "react-icons/fi";
+import { FiEdit, FiSearch, FiMessageSquare } from "react-icons/fi";
 import { useState } from "react";
 import { FollowRequestsList, useFollowRequests } from "@/features/profile";
+import { useChatStore, useConversations, formatMessageTime } from "@/features/chat";
 
-const messages = [
-  { name: "Roger Korsgaard", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop", online: true },
-  { name: "Terry Torff", avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop", online: true },
-  { name: "Angel Bergson", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop", online: true },
-  { name: "Emerson Gouse", avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop", online: true },
-  { name: "Corey Baptista", avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop", online: true },
-  { name: "Zain Culhane", avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop", online: true },
-  { name: "Randy Lipshutz", avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop", online: true },
-  { name: "Craig Botosh", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop", online: true },
-];
 
-const events = [
-  { title: "10 Events Invites", icon: FiCalendar },
-  { title: "Design System Collaboration", subtitle: "Thu - Harpoon Mall, YK", icon: FiCalendar },
-  { title: "Web Dev 2.0 Meetup", subtitle: "Yoshkar-Ola, Russia", icon: FiCalendar },
-  { title: "Prada's Invitation Birthday", subtitle: "Sat - Grand Hotel", icon: FiGift },
-];
 
 export function RightSidebar() {
   const [activeTab, setActiveTab] = useState("Primary");
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: requests = [] } = useFollowRequests();
+  const { data: conversations = [], isLoading: isConversationsLoading } = useConversations();
+  const openChat = useChatStore((state) => state.openChat);
+
+  const filteredConversations = conversations.filter((c) =>
+    c.otherUser?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <aside className="w-80 h-[calc(100vh-65px)] sticky top-[65px] flex flex-col pt-6 pb-4 pl-6 overflow-y-auto scrollbar-hide">
@@ -48,8 +40,10 @@ export function RightSidebar() {
             </div>
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-9 pr-3 py-2 bg-gray-50 border-transparent rounded-xl text-xs placeholder-gray-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 transition-colors outline-none"
-              placeholder="Search"
+              placeholder="Search conversations..."
             />
           </div>
         )}
@@ -85,55 +79,89 @@ export function RightSidebar() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-4">
+        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2">
           {activeTab === "Requests" ? (
             <FollowRequestsList compact />
+          ) : isConversationsLoading ? (
+            <div className="space-y-3 py-2">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="flex items-center gap-3 p-2 animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex-1 space-y-1.5 min-w-0">
+                    <div className="h-3 bg-gray-200 rounded w-24" />
+                    <div className="h-2 bg-gray-100 rounded w-36" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredConversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-2.5">
+                <FiMessageSquare className="w-5 h-5" />
+              </div>
+              <p className="text-xs font-bold text-gray-700">
+                {searchQuery ? "No matches found" : "No messages yet"}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1 max-w-[200px] leading-relaxed">
+                {searchQuery
+                  ? `No conversations match "${searchQuery}"`
+                  : 'Click "Message" on any user\'s profile to start chatting!'}
+              </p>
+            </div>
           ) : (
-            messages.map((msg, i) => (
+            filteredConversations.map((conv, i) => (
               <motion.div 
-                key={msg.name}
+                key={conv._id}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-3 cursor-pointer group"
+                transition={{ delay: i * 0.04 }}
+                onClick={() =>
+                  openChat({
+                    id: conv.otherUser._id,
+                    name: conv.otherUser.name,
+                    avatar: conv.otherUser.avatar || undefined,
+                    isOnline: conv.otherUser.isOnline,
+                  })
+                }
+                className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 p-2 rounded-xl transition-colors"
               >
-                <Avatar size="sm" src={msg.avatar} online={msg.online} />
-                <p className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-                  {msg.name}
-                </p>
+                <div className="shrink-0">
+                  <Avatar
+                    size="sm"
+                    src={conv.otherUser.avatar || undefined}
+                    online={conv.otherUser.isOnline}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-semibold text-gray-800 group-hover:text-blue-600 transition-colors truncate">
+                      {conv.otherUser.name}
+                    </p>
+                    {conv.updatedAt && (
+                      <span className="text-[10px] text-gray-400 shrink-0">
+                        {formatMessageTime(conv.updatedAt)}
+                      </span>
+                    )}
+                  </div>
+                  {conv.lastMessage && (
+                    <p className="text-[11px] text-gray-400 truncate mt-0.5">
+                      {conv.lastMessage.text}
+                    </p>
+                  )}
+                </div>
               </motion.div>
             ))
+
           )}
         </div>
         
-        {activeTab !== "Requests" && (
+        {activeTab !== "Requests" && filteredConversations.length > 5 && (
           <button className="text-xs font-semibold text-gray-500 mt-4 text-left hover:text-gray-800 transition-colors pt-2 border-t border-gray-50">
             View All
           </button>
         )}
       </div>
-
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-900">Events</h3>
-          <button className="text-gray-400 hover:text-gray-900 transition-colors">
-            <FiMoreVertical className="w-4 h-4" />
-          </button>
-        </div>
-
-        <ul className="space-y-4">
-          {events.map((event, i) => (
-            <li key={i} className="flex gap-3 cursor-pointer group">
-              <event.icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0 group-hover:text-blue-500 transition-colors" />
-              <div>
-                <p className="text-xs font-semibold text-gray-900">{event.title}</p>
-                {event.subtitle && <p className="text-[10px] text-gray-500 mt-0.5">{event.subtitle}</p>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
     </aside>
   );
 }
+
