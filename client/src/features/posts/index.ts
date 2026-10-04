@@ -5,6 +5,7 @@ export * from './api/comment.service';
 export * from './components/CreatePost';
 export * from './components/MainFeed';
 export * from './components/PostCard';
+export * from './components/PostCardSkeleton';
 export * from './components/EditPostModal';
 export * from './components/comments';
 export * from './hooks/usePost';

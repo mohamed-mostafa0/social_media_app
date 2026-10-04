@@ -47,8 +47,17 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
         followingCount: { type: GraphQLInt },
         postsCount: { type: GraphQLInt },
         isPrivate: { type: GraphQLBoolean },
-        isSelf: { type: GraphQLBoolean },
+        isSelf: {
+            type: GraphQLBoolean,
+            resolve: (user: any, _args: any, context: any) => {
+                if (typeof user?.isSelf === "boolean") return user.isSelf;
+                const loggedInUserId = context.user?.user?._id;
+                if (!loggedInUserId || !user?._id) return false;
+                return user._id.toString() === loggedInUserId.toString();
+            }
+        },
         followStatus: { type: GraphQLString },
+
         posts: { type: PaginatedPostType }
     })
 })

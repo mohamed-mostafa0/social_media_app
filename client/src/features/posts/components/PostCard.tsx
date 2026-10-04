@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
 import { FiMoreVertical, FiHeart, FiMessageCircle, FiBookmark, FiShare2 } from "react-icons/fi";
@@ -79,60 +80,29 @@ export function PostCard({
       className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6"
     >
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Avatar size="md" src={author.avatar} />
-          <div>
-            <h3 className="text-sm font-bold text-gray-900">{author.name}</h3>
-            <p className="text-xs text-gray-400">{author.date || author.handle}</p>
+        {authorId ? (
+          <Link href={`/profile/${authorId}`} className="flex items-center gap-3 group/author">
+            <Avatar size="md" src={author.avatar} />
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 group-hover/author:text-blue-600 transition-colors">
+                {author.name}
+              </h3>
+              <p className="text-xs text-gray-400">{author.date || author.handle}</p>
+            </div>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Avatar size="md" src={author.avatar} />
+            <div>
+              <h3 className="text-sm font-bold text-gray-900">{author.name}</h3>
+              <p className="text-xs text-gray-400">{author.date || author.handle}</p>
+            </div>
           </div>
-        </div>
+        )}
         <IconButton variant="ghost" size="sm">
           <FiMoreVertical className="w-5 h-5 text-gray-400" />
         </IconButton>
       </div>
-
-      {images.length > 0 && (
-        <div className={`grid gap-2 mb-4 overflow-hidden ${
-          images.length === 1 ? 'grid-cols-1' : 
-          images.length === 2 ? 'grid-cols-2' : 
-          images.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-        }`}>
-          {images.map((img, index) => {
-            if (images.length === 3 && index === 0) {
-              return (
-                <div key={index} className="col-span-2 aspect-[2/1] relative rounded-xl overflow-hidden">
-                  <img src={img} alt="Post content" className="w-full h-full object-cover" />
-                </div>
-              );
-            }
-            if (images.length >= 4 && index === 0) {
-              return (
-                <div key={index} className="col-span-1 row-span-2 aspect-square relative rounded-xl overflow-hidden">
-                  <img src={img} alt="Post content" className="w-full h-full object-cover" />
-                </div>
-              );
-            }
-            if (images.length > 4 && index === 3) {
-              return (
-                <div key={index} className="col-span-1 aspect-square relative cursor-pointer group rounded-xl overflow-hidden">
-                  <img src={img} alt="Post content" className="w-full h-full object-cover group-hover:brightness-75 transition-all" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <span className="text-white text-xl font-bold">+{images.length - 4}</span>
-                  </div>
-                </div>
-              );
-            }
-            if (index < 4) {
-               return (
-                <div key={index} className="col-span-1 aspect-square relative rounded-xl overflow-hidden">
-                  <img src={img} alt="Post content" className="w-full h-full object-cover" />
-                </div>
-              );
-            }
-            return null;
-          })}
-        </div>
-      )}
 
       {content && (
         <div className="mb-4">
@@ -148,6 +118,109 @@ export function PostCard({
           )}
         </div>
       )}
+
+      {images.length > 0 && (
+        <div
+          className={`grid gap-2 mb-4 overflow-hidden ${
+            images.length === 1
+              ? "grid-cols-1"
+              : "grid-cols-2"
+          }`}
+        >
+          {images.map((img, index) => {
+            if (images.length === 1) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-1 w-full rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center max-h-[500px]"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-auto h-auto max-h-[500px] max-w-full object-contain rounded-xl"
+                  />
+                </div>
+              );
+            }
+            if (images.length === 2) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-1 h-56 sm:h-64 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              );
+            }
+            if (images.length === 3 && index === 0) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-2 h-60 sm:h-72 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              );
+            }
+            if (images.length === 3) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-1 h-44 sm:h-52 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              );
+            }
+            if (images.length > 4 && index === 3) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-1 h-44 sm:h-52 relative cursor-pointer group rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-full h-full object-contain group-hover:brightness-75 transition-all"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="text-white text-lg font-bold">+{images.length - 4}</span>
+                  </div>
+                </div>
+              );
+            }
+            if (index < 4) {
+              return (
+                <div
+                  key={index}
+                  className="col-span-1 h-44 sm:h-52 relative rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+                >
+                  <img
+                    src={img}
+                    alt="Post content"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
+        </div>
+      )}
+
+
 
       <div className="flex items-center justify-between pt-2">
         <div className="flex gap-6">

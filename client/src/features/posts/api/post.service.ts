@@ -1,5 +1,110 @@
 import { apiClient } from "@/lib/axios";
 import { CreatePostPayload, EditPostPayload } from "../types/post.types";
+import { GraphQLComment, GraphQlUserType } from "@/features/profile";
+
+export interface GraphQlMainFeedPost {
+    _id:string;
+    describtion?:string;
+    attachments?:string[];
+    allowComments?:boolean;
+    likesCount?:number;
+    commentsCount?:number;
+    createdAt?:string;
+    isLiked?:boolean;
+    owner?:GraphQlUserType;
+    tags?:GraphQlUserType[];
+    comments?:GraphQLComment[]
+}
+
+export interface GraphQlMainFeed{
+    totalDocs:number;
+    limit:number;
+    totalPages:number;
+    page:number;
+    pagingCounter:number;
+    hasPrevPage:boolean;
+    hasNextPage:boolean;
+    prevPage:unknown;
+    nextPage:unknown;
+    docs:GraphQlMainFeedPost[]
+}
+
+
+const GET_FEED_QUERY = `
+query GetFeed($page: Int, $limit: Int) {
+    getFeed(page: $page, limit: $limit) {
+
+        totalDocs
+        limit
+        totalPages
+        page
+        pagingCounter
+        hasPrevPage
+        hasNextPage
+        prevPage
+        nextPage
+        docs {
+            _id
+            describtion
+            attachments
+            allowComments
+            likesCount
+            commentsCount
+            createdAt
+            isLiked
+            owner {
+                _id
+                firstName
+                lastName
+                profilePicture
+            }
+            tags {
+                _id
+                firstName
+                lastName
+                profilePicture
+            }
+            comments {
+                _id
+                content
+                likesCount
+                repliesCount
+                createdAt
+                isLiked
+                attachment {
+                    url
+                    publicId
+                }
+                replies {
+                    _id
+                    content
+                    likesCount
+                    repliesCount
+                    createdAt
+                    isLiked
+                    attachment {
+                        url
+                        publicId
+                    }
+                    ownerId {
+                        _id
+                        firstName
+                        lastName
+                        profilePicture
+                    }
+                }
+                ownerId {
+                    _id
+                    firstName
+                    lastName
+                    profilePicture
+                }
+            }
+        }
+    }
+}
+
+`
 
 export const postService = {
   addPost: async (body: CreatePostPayload | FormData) => {
@@ -46,4 +151,20 @@ export const postService = {
     const response = await apiClient.post(`/like/${postId}`, { onModel: "Post" });
     return response.data;
   },
-};
+
+  getMainFeed: async(page=1 , limit=10):Promise<GraphQlMainFeed>=>{
+    const response = await apiClient.post("/graphql" , {
+      query:GET_FEED_QUERY,
+      variables:{page , limit}
+    })
+
+    if (response.data?.errors && response.data.errors.length > 0) {
+      throw new Error(
+        response.data.errors[0].message || "GraphQL request failed"
+      );
+    }
+
+    return response.data?.data?.getFeed;
+
+}
+}

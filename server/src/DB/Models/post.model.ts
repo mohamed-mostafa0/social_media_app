@@ -9,10 +9,12 @@ const postSchema = new mongoose.Schema<IPost>({
     describtion:String,
     attachments:[String],
     attachmentsPublicIds:[String],
-    ownerId:{
-        type:mongoose.Schema.Types.ObjectId,
-        required:true
+    ownerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
     },
+
     allowComments:{
         type:Boolean,
         default:true

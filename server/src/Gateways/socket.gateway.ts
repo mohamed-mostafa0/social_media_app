@@ -4,17 +4,31 @@ import { verifyToken } from "../Utils/index.js";
 import { chatInitiation } from "../Modules/Chat/chat.js";
 
 
-const socketAuthentication = ((socket:Socket , next:Function)=>{
+const socketAuthentication = (socket: Socket, next: (err?: Error) => void) => {
+    try {
+        const token = socket.handshake.auth?.token;
+        if (!token) {
+            return next(new Error("Authentication error: No token provided"));
+        }
 
-    const decodedData = verifyToken(socket.handshake.auth.token)
-    socket.data = {userId:decodedData._id}
+        const decodedData = verifyToken(token);
+        if (!decodedData || !decodedData._id) {
+            return next(new Error("Authentication error: Invalid token"));
+        }
 
-    const userTabs = connectedSockets.get(socket.data.userId)    
-    if(!userTabs) connectedSockets.set(socket.data.userId , [socket.id])
-    else userTabs.push(socket.id)
-    // console.log(connectedSockets);
-    next() 
-})
+        socket.data = { userId: decodedData._id.toString() };
+
+        const userTabs = connectedSockets.get(socket.data.userId);
+        if (!userTabs) connectedSockets.set(socket.data.userId, [socket.id]);
+        else userTabs.push(socket.id);
+
+        next();
+    } catch (err: any) {
+        console.warn(`[Socket Auth Rejected] ${socket.id}: ${err?.message || "Token expired or invalid"}`);
+        return next(new Error("Authentication error: Token expired or invalid"));
+    }
+};
+
 
 const socketDisconnection = (socket: Socket) => {
     socket.on("disconnect", () => {

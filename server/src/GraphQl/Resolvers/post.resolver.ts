@@ -9,31 +9,23 @@ class PostResolver {
 
     getFeed = async (_: any, args: { page: number; limit: number }, context: any) => {
         const { page, limit } = args
+        const loggedInUserId = context.user.user._id
 
         const result = await this.postRepo.postPagination(
-            {},
+            {ownerId:{$ne:loggedInUserId}},
             {
                 page,
                 limit,
                 populate: {
                     path: "ownerId",
-                    select: "firstName lastName profilePicture gender"
+                    select: "firstName lastName profilePicture gender isPrivate"
                 },
+
                 lean: true
             }
         )
 
-        const posts = await Promise.all(
-            result.docs.map(async (post: any) => {
-                const commentsCount = await CommentModel.countDocuments({
-                    refId: post._id,
-                    onModel: "Post"
-                })
-                return { ...post, commentsCount }
-            })
-        )
-
-        return posts
+        return result  
     }
 }
 
