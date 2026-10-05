@@ -53,25 +53,27 @@ export const connectedSockets = new Map<string ,string[]>()
 
 export const ioIntializer = (server:HttpServer , corsOptions:Object)=>{
 
-    io = new Server(server , {cors:corsOptions 
-    //,  maxHttpBufferSize:1e8 ,
-    //  connectionStateRecovery:{
-    // maxDisconnectionDuration:2*60*1000,
-    // skipMiddlewares:false}
-})
+    io = new Server(server , {cors:corsOptions })
 
-io.use(socketAuthentication)
+    io.use(socketAuthentication)
 
-io.on("connection" , (socket:Socket)=>{
-    console.log("A USER CONNECTED");
-    chatInitiation(socket)
-    socketDisconnection(socket)
-    
-})
-
-
-
+    io.on("connection" , (socket:Socket)=>{
+        console.log("A USER CONNECTED");
+        chatInitiation(socket)
+        socketDisconnection(socket)
+        
+    })
 }
+
+export const emitToUser = (userId: string, event: string, data: any) => {
+    const userTabs = connectedSockets.get(userId.toString());
+    if (userTabs?.length) {
+        const ioInstance = getIo();
+        userTabs.forEach((sockId) => {
+            ioInstance?.to(sockId).emit(event, data);
+        });
+    }
+};
 
 export const getIo = ()=>{
     try{
@@ -83,12 +85,6 @@ export const getIo = ()=>{
     }
 }
 
-export const emitToUser = (userId: string, event: string, data: any) => {
-    const userTabs = connectedSockets.get(userId.toString());
-    if (userTabs?.length) {
-        const ioInstance = getIo();
-        userTabs.forEach((sockId) => {
-            ioInstance?.to(sockId).emit(event, data);
-        });
-    }
-};
+
+
+

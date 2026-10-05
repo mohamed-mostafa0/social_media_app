@@ -38,6 +38,7 @@ app.use("/api/comment", controllers.CommentController)
 app.use("/api/post", controllers.PostController)
 app.use("/api/like", controllers.LikeController)
 app.use("/api/chat", controllers.chatController)
+app.use("/api/notification", controllers.NotificationController)
 
 
 
@@ -46,6 +47,7 @@ app.use((err: Error | HttpException | null, req: Request, res: Response, next: N
         if (err instanceof HttpException) {
             res.status(err.statusCode).json(failedResponse(err.message, err.statusCode, err.error))
         } else {
+            console.error("SERVER ERROR:", err)
             res.status(500).json(failedResponse("Something Went Wrong", 500, err))
         }
     }
