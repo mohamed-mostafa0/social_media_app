@@ -8,5 +8,6 @@ export enum NotificationEntityTypeEnum {
 export enum NotificattionTypeEnum {
     LIKE = "like",
     COMMENT = "comment",
-    MESSAGE = "message"
+    MESSAGE = "message",
+    FOLLOW = "follow"
 }

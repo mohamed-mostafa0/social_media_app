@@ -91,13 +91,12 @@ export function useNotificationListener(onNewNotification?: (item: INotification
 
     const handleIncomingNotification = (data: any) => {
       const incomingItem: INotificationItem = {
-        _id: data?._id || String(Date.now()),
-        recipientId: data?.recipientId || "",
-        senderId: data?.senderId || data?.sender,
-        sender: data?.sender || data?.senderId,
-        type: data?.type || "like",
-        entityId: data?.entityId || data?.data?.refId,
-        entityType: data?.entityType || data?.data?.entityType,
+        _id: data?._id ,
+        recipientId: data?.recipientId ,
+        sender: data?.sender,
+        type: data?.type,
+        entityId: data?.entityId ,
+        entityType: data?.entityType ,
         message: data?.message,
         isRead: false,
         createdAt: data?.createdAt || new Date().toISOString(),
@@ -131,11 +130,10 @@ export function useNotificationListener(onNewNotification?: (item: INotification
     };
 
     socket.on("notification", handleIncomingNotification);
-    socket.on("like", handleIncomingNotification);
 
     return () => {
       socket.off("notification", handleIncomingNotification);
-      socket.off("like", handleIncomingNotification);
+
     };
   }, [socket, queryClient, onNewNotification]);
 

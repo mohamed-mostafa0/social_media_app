@@ -23,5 +23,5 @@ export enum RoleEnum{
 export enum followStatusEnum{
     PENDING = "pending",
     ACCEPTED = "accepted",
-    // REJECTED = "rejected"
+    REJECTED = "rejected"
 }

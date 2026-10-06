@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
-import { FollowRepository, UserRepository } from "../../../DB/Repositories/index.js";
+import { FollowRepository, UserRepository , NotificationRepository } from "../../../DB/Repositories/index.js";
 import { UserModel } from "../../../DB/Models/index.js";
 import mongoose from "mongoose";
 import { BadRequestException, deleteImageFromCloudinary, NotFoundException, successResponse, uploadImageOnCloudinary } from "../../../Utils/index.js";
-import { followStatusEnum, type IRequest, type IUser } from "../../../Common/index.js";
+import { followStatusEnum, NotificationEntityTypeEnum, NotificattionTypeEnum, type INotification, type IRequest, type IUser } from "../../../Common/index.js";
+import { emitToUser } from "../../../Gateways/socket.gateway.js";
 
 
 
@@ -12,6 +13,7 @@ class ProfileService {
 
     private userRepo: UserRepository = new UserRepository(UserModel)
     private followRepo = new FollowRepository()
+    private notificationRepo:NotificationRepository = new NotificationRepository()
 
 
     uploadProfilePicture = async (req: Request, res: Response) => {
@@ -128,39 +130,90 @@ class ProfileService {
             followToId: followToId as unknown as mongoose.Types.ObjectId
         });
 
-        let message: string;
+        let message: string = '';
+        let notificationMessage:string= '' 
         let statusCode = 200;
+        let createdNotification:any = null
+        let shouldNotify = false
 
-        if (existingFollow) {
-            await this.followRepo.findDocumentByIdAndDelete(existingFollow._id);
-            if (existingFollow.status === followStatusEnum.ACCEPTED) {
-                targetUser.followersCount = Math.max(0, (targetUser.followersCount || 0) - 1);
-                user.followingCount = Math.max(0, (user.followingCount || 0) - 1);
-                await targetUser.save();
-                await user.save();
-                message = "User unfollowed successfully";
-            } else {
-                message = "Follow request cancelled successfully";
-            }
-        } else {
-            const isTargetPrivate = Boolean(targetUser.isPrivate);
-            const status = isTargetPrivate ? followStatusEnum.PENDING : followStatusEnum.ACCEPTED;
-            await this.followRepo.createDocument({
-                followFromId: user._id,
-                followToId: followToId as unknown as mongoose.Types.ObjectId,
-                status
-            });
-            if (isTargetPrivate) {
-                message = "Follow request sent successfully";
-            } else {
-                targetUser.followersCount = (targetUser.followersCount || 0) + 1;
-                user.followingCount = (user.followingCount || 0) + 1;
-                await targetUser.save();
-                await user.save();
-                message = "User followed successfully";
-            }
-            statusCode = 201;
+        const session = await mongoose.startSession()
+        try {
+            await session.withTransaction(async () => {
+                if (existingFollow) {
+                    await this.followRepo.findDocumentByIdAndDelete(existingFollow._id , {session});
+                    await this.notificationRepo.deleteManyDocuments({
+                        senderId: user._id,
+                        recipientId: targetUser._id,
+                        type: NotificattionTypeEnum.FOLLOW,
+                    }, { session });
+
+                    if (existingFollow.status === followStatusEnum.ACCEPTED) {
+                        targetUser.followersCount = Math.max(0, (targetUser.followersCount || 0) - 1);
+                        user.followingCount = Math.max(0, (user.followingCount || 0) - 1);
+                        await targetUser.save({session});
+                        await user.save({session});
+                        message = "User unfollowed successfully";
+                    } else {
+                        message = "Follow request cancelled successfully";
+                    }
+                } else {
+                    shouldNotify = true
+                    const isTargetPrivate = Boolean(targetUser.isPrivate);
+                    const status = isTargetPrivate ? followStatusEnum.PENDING : followStatusEnum.ACCEPTED;
+                    await this.followRepo.createDocument({
+                        followFromId: user._id,
+                        followToId: followToId as unknown as mongoose.Types.ObjectId,
+                        status
+                    } , {session});
+
+                    if (isTargetPrivate) {
+                        notificationMessage =` requested to follow you`
+                        message = "Follow request sent successfully";
+                    } else {
+                        targetUser.followersCount = (targetUser.followersCount || 0) + 1;
+                        user.followingCount = (user.followingCount || 0) + 1;
+                        await targetUser.save({session});
+                        await user.save({session});
+                        notificationMessage = ` started following you`
+                        message = "User followed successfully";
+                    }
+                    createdNotification = await this.notificationRepo.createDocument({
+                        senderId:user._id,
+                        recipientId:targetUser._id,
+                        type:NotificattionTypeEnum.FOLLOW,
+                        entityId:user._id,
+                        entityType:NotificationEntityTypeEnum.USER,
+                        message:notificationMessage
+                    } , {session})
+                    statusCode = 201;
+                }
+            })
+
+        }finally{
+            await session.endSession()
         }
+
+        if (shouldNotify) {
+            const notificationPayload = {
+                _id: createdNotification._id,
+                message: notificationMessage,
+                type: NotificattionTypeEnum.FOLLOW,
+                entityId: user._id,
+                entityType:NotificationEntityTypeEnum.USER,
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                sender: {
+                    _id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    profilePicture: user.profilePicture
+                },
+
+                
+            };
+            emitToUser(targetUser._id.toString(), "notification", notificationPayload);
+        };
+
         return res.status(statusCode).json(successResponse(message, statusCode));
     };
 
@@ -203,24 +256,64 @@ class ProfileService {
             throw new BadRequestException("User not found or account is deactivated");
         }
 
-        if (response === "accept") {
-            existingFollow.status = followStatusEnum.ACCEPTED;
+        const session = await mongoose.startSession()
+        let message = ''
+        let shouldNotify = false
+        let createdNotification:any = null
+        const notificationMessage = ` accepted your follow request`
+        try{
+            await session.withTransaction(async()=>{
 
-            await Promise.all([
-                existingFollow.save(),
-                this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
-                    $inc: { followingCount: 1 }
-                }),
-                this.userRepo.findByIdAndUpdateDocument(user._id, {
-                    $inc: { followersCount: 1 }
-                })
-            ]);
-
-            return res.status(200).json(successResponse("Follow request accepted successfully", 200));
-        } else {
-            await this.followRepo.findDocumentByIdAndDelete(existingFollow._id);
-            return res.status(200).json(successResponse("Follow request rejected successfully", 200));
+                if (response === "accept") {
+                    shouldNotify = true
+                    existingFollow.status = followStatusEnum.ACCEPTED;
+                        await existingFollow.save({session}),
+                        this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
+                            $inc: { followingCount: 1 }
+                        } , {session}),
+                        await this.userRepo.findByIdAndUpdateDocument(user._id, {
+                            $inc: { followersCount: 1 }
+                        } , {session})
+                        createdNotification = await this.notificationRepo.createDocument({
+                            senderId:user._id,
+                            recipientId:targetUser._id,
+                            type:NotificattionTypeEnum.FOLLOW,
+                            entityId:user._id,
+                            entityType:NotificationEntityTypeEnum.USER,
+                            message:notificationMessage
+                        }, {session})
+                    message = 'Follow request accepted'
+        
+                } else {
+                    await this.followRepo.findByIdAndUpdateDocument(existingFollow._id , {
+                        $set:{status:followStatusEnum.REJECTED}
+                    } , {session});
+                    message = "Follow request rejected"
+                }
+            })
+        }finally{
+            await session.endSession()
         }
+        if(shouldNotify){
+            const notificationPayload = {
+                _id: createdNotification._id,
+                message: notificationMessage,
+                type: NotificattionTypeEnum.FOLLOW,
+                entityId: user._id,
+                entityType: NotificationEntityTypeEnum.USER,
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                sender: {
+                    _id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    profilePicture: user.profilePicture
+                },
+                
+            };
+                emitToUser(targetUser._id.toString(), "notification", notificationPayload);
+        }
+        return res.status(200).json(successResponse(message, 200));
     }
 
     getFollowers = async (req: Request, res: Response) => {

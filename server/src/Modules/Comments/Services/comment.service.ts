@@ -1,9 +1,11 @@
 import type { Request, Response } from "express";
-import { type IComment, type IRequest } from "../../../Common/index.js";
+import { NotificationEntityTypeEnum, NotificattionTypeEnum, type IComment, type IRequest } from "../../../Common/index.js";
 import { CommentRepository, FollowRepository, PostRepository, UserRepository } from "../../../DB/Repositories/index.js";
 import { BadRequestException, deleteImageFromCloudinary, deleteImagesOnCloudinary, NotFoundException, pagination, successResponse, UnauthorizedException, uploadImageOnCloudinary, uploadImagesOnCloudinary } from "../../../Utils/index.js";
 import type { Types } from "mongoose";
 import mongoose from "mongoose";
+import { NotificationRepository } from "../../../DB/Repositories/notification.repository.js";
+import { emitToUser } from "../../../Gateways/socket.gateway.js";
 
 
 
@@ -13,10 +15,11 @@ export class CommentService {
 
     private postRepo: PostRepository = new PostRepository()
     private commentRepo: CommentRepository = new CommentRepository()
+    private notificationRepo:NotificationRepository = new NotificationRepository()
 
 
         addComment = async (req: Request, res: Response) => {
-        const { user: { _id } } = (req as IRequest).loggedInUser;
+        const { user } = (req as IRequest).loggedInUser;
         const { postId } = req.params;
         const { parentCommentId, content } = req.body;
         const attachment = req.file as Express.Multer.File | undefined;
@@ -36,8 +39,9 @@ export class CommentService {
 
         let targetParentId = parentCommentId
 
+        let parentComment:IComment | null = null; 
         if (parentCommentId) {
-            const parentComment = await this.commentRepo.findDocumentById(parentCommentId);
+            parentComment = await this.commentRepo.findDocumentById(parentCommentId);
             if (!parentComment) throw new NotFoundException("Parent comment not found");
             if (parentComment.parentCommentId) {
                 targetParentId = parentComment.parentCommentId.toString()
@@ -57,6 +61,22 @@ export class CommentService {
         }
         const session = await mongoose.startSession();
         let comment: IComment | null = null;
+        let notificationMessage = "";
+        let createdNotification: any = null;
+        let recipientId: string | null = null;
+        let shouldNotify = false
+
+        if(parentCommentId && parentComment){
+            if(user._id.toString() !== parentComment.ownerId.toString()){
+                recipientId = parentComment.ownerId.toString(),
+                notificationMessage = `${user.firstName} ${user.lastName} replied to your comment`;
+            }
+        }else{
+            if(user._id.toString() !== post.ownerId.toString()){
+                recipientId = post.ownerId.toString(),
+                notificationMessage = `${user.firstName} ${user.lastName} commented on your post`;
+            }
+        }
         try {
             await session.withTransaction(async () => {
                 if (parentCommentId) {
@@ -72,13 +92,25 @@ export class CommentService {
                     ...(attachmentData && { attachment: attachmentData }),
                     parentCommentId: targetParentId || null,
                     postId: postId as unknown as Types.ObjectId,
-                    ownerId: _id
+                    ownerId: user._id
                 }, { session });
                 const updatedPost = await this.postRepo.findByIdAndUpdateDocument(
                     postId as string,
                     { $inc: { commentsCount: 1 } },
                     { session }
                 );
+                if(recipientId){
+                    shouldNotify = true
+                    createdNotification = await this.notificationRepo.createDocument({
+                        senderId: user._id,
+                        recipientId: recipientId as unknown as Types.ObjectId,
+                        type: NotificattionTypeEnum.COMMENT,
+                        entityId: postId as unknown as Types.ObjectId,
+                        entityType:NotificationEntityTypeEnum.POST,
+                        message:notificationMessage
+                    } , {session})
+                }
+                
                 if (!updatedPost) throw new NotFoundException("Post not found");
             });
         } catch (error) {
@@ -89,8 +121,29 @@ export class CommentService {
         } finally {
             await session.endSession();
         }
+
+       if (recipientId && createdNotification) {
+            const notificationPayload = {
+                _id: createdNotification._id,
+                message: notificationMessage,
+                type: NotificattionTypeEnum.COMMENT,
+                entityId: postId,
+                entityType: NotificationEntityTypeEnum.POST,
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                sender: {
+                    _id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    profilePicture: user.profilePicture
+                },
+                
+            };
+            emitToUser(recipientId, "notification", notificationPayload);
+        };
+            
         return res.status(201).json(successResponse("Comment added successfully", 201, comment));
-    };
+}
 
     deleteComment = async (req: Request, res: Response) => {
         const { user: { _id } } = (req as IRequest).loggedInUser;

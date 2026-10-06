@@ -104,25 +104,14 @@ class LikeService {
                 entityType: onModel,
                 createdAt: new Date().toISOString(),
                 isRead: false,
-                senderId: {
-                    _id: user._id,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    profilePicture: user.profilePicture
-                },
                 sender: {
                     _id: user._id,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     profilePicture: user.profilePicture
                 },
-                data: {
-                    refId,
-                    entityType: onModel
-                }
             };
             emitToUser(targetDoc.ownerId.toString(), "notification", notificationPayload);
-            emitToUser(targetDoc.ownerId.toString(), "like", notificationPayload);
         }
 
         return res.status(200).json(successResponse(message , 200 ))
