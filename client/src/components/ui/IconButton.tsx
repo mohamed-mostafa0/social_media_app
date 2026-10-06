@@ -20,13 +20,13 @@ export function IconButton({
   ...props
 }: IconButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
+    "inline-flex cursor-pointer items-center justify-center rounded-full transition-colors ";
   
   const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500",
+    primary: "bg-blue-600 text-white hover:bg-blue-700 ",
+    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 ",
     ghost: active 
-      ? "bg-blue-50 text-blue-600 hover:bg-blue-100 focus:ring-blue-500"
+      ? "bg-blue-50 text-blue-600 hover:bg-blue-100 "
       : "bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500",
   };
 

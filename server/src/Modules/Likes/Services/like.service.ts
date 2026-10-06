@@ -45,6 +45,7 @@ class LikeService {
         let isSelfAction =user._id.toString() === targetDoc.ownerId.toString() 
         const notificationMessage = `${user.firstName} ${user.lastName} liked your ${onModel.toLocaleLowerCase()}`
         let shouldNotify = false
+        let createdNotification: any = null
         const session = await mongoose.startSession()
         try{
             await session.withTransaction(async()=>{                
@@ -75,7 +76,7 @@ class LikeService {
                     }, { session })
 
                     if(!isSelfAction){
-                        await this.notificationRepo.createDocument({
+                        const created = await this.notificationRepo.createDocument({
                             senderId: user._id,
                             recipientId: targetDoc.ownerId,
                             type: NotificattionTypeEnum.LIKE,
@@ -83,6 +84,7 @@ class LikeService {
                             entityType: onModel,
                             message: notificationMessage
                         }, { session })
+                        createdNotification = created
                         shouldNotify = true
                     }
 
@@ -94,19 +96,33 @@ class LikeService {
         }
 
         if(shouldNotify){
-            emitToUser(targetDoc.ownerId.toString() ,"like",{
-                message:notificationMessage,
-                data:{
+            const notificationPayload = {
+                _id: createdNotification?._id,
+                message: notificationMessage,
+                type: NotificattionTypeEnum.LIKE,
+                entityId: refId,
+                entityType: onModel,
+                createdAt: new Date().toISOString(),
+                isRead: false,
+                senderId: {
+                    _id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    profilePicture: user.profilePicture
+                },
+                sender: {
+                    _id: user._id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    profilePicture: user.profilePicture
+                },
+                data: {
                     refId,
-                    entityType:onModel,
-                    sender:{
-                        _id:user._id,
-                        firstName:user.firstName,
-                        lastName:user.lastName,
-                        profilePicture:user.profilePicture
-                    }
+                    entityType: onModel
                 }
-            })
+            };
+            emitToUser(targetDoc.ownerId.toString(), "notification", notificationPayload);
+            emitToUser(targetDoc.ownerId.toString(), "like", notificationPayload);
         }
 
         return res.status(200).json(successResponse(message , 200 ))

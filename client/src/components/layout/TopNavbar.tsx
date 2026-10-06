@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useFollowRequests } from "@/features/profile";
 import { UserNavDropdown } from "./UserNavDropdown";
+import { NotificationDropdown } from "@/features/notifications";
 
 export function TopNavbar() {
   const isAuth = useAuthStore((state) => state.isAuth);
@@ -39,14 +40,7 @@ export function TopNavbar() {
       </div>
 
       <div className="flex items-center gap-3 flex-shrink-0">
-        <Link href="/friends" className="relative block" title="Follow Requests">
-          <IconButton variant="ghost" size="md">
-            <FiBell className="w-5 h-5" />
-          </IconButton>
-          {requests.length > 0 && (
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white ring-1 ring-red-400/50 animate-pulse" />
-          )}
-        </Link>
+        {isAuth && <NotificationDropdown />}
         
         <IconButton variant="ghost" size="md">
           <FiBookmark className="w-5 h-5" />
