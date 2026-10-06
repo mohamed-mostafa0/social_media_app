@@ -8,6 +8,13 @@ cloudinaryV2.config({
     api_secret:process.env.CLOUDINARY_API_SECRET
 })
 
+export const uploadMediaOnCloudinary = async(file:string , folderName:string)=>{
+    const result = await cloudinaryV2.uploader.upload(file , {
+        resource_type:"auto",
+        folder:folderName
+    })
+    return result
+}
 
 export const uploadImageOnCloudinary = async(file:string , folderName:string):Promise<UploadApiResponse>=>{
     const result = await cloudinaryV2.uploader.upload(

@@ -39,6 +39,7 @@ app.use("/api/post", controllers.PostController)
 app.use("/api/like", controllers.LikeController)
 app.use("/api/chat", controllers.chatController)
 app.use("/api/notification", controllers.NotificationController)
+app.use("/api/story", controllers.storyController)
 
 
 

@@ -8,33 +8,38 @@ import { unlink } from "node:fs/promises"
 
 
 
-export const uploadImage = ()=>{
-        const storage = multer.diskStorage({})
-
-        const fileFilter = async(req:Request , file:Express.Multer.File , cb:multer.FileFilterCallback)=>{
-
-            console.log(file.mimetype);
-            
-            
-            const fileMimeType:string | undefined= file.mimetype.split("/")[0]
-            console.log(fileMimeType);
-            
-            if(!fileMimeType || !Object.values(fileTypeEnum).includes(fileMimeType))                
-                return cb(new BadRequestException(`Allowed file types ${Object.values(fileTypeEnum)}`))
-            
-            const fileExtenstion:string | undefined= file.mimetype.split("/")[1]
-            console.log("fileExtention:" , fileExtenstion);
-
-            if(!fileExtenstion || !AllowedFileExtenstionsEnum[fileMimeType]?.includes(fileExtenstion))
-                return cb(new BadRequestException(`Allowd file extenstions ${AllowedFileExtenstionsEnum[fileMimeType]}`))
-
-            return cb(null, true)
+export const uploadMedia = (
+    allowedTypes: string[] = [fileTypeEnum.IMAGE, fileTypeEnum.VIDEO]
+) => {
+    const storage = multer.diskStorage({});
+    const fileFilter = (req: Request , file: Express.Multer.File , cb: multer.FileFilterCallback
+    ) => {
+        const [fileMimeType, fileExtension] = file.mimetype.split("/");
+        if (!fileMimeType || !allowedTypes.includes(fileMimeType)) {
+            return cb(
+                new BadRequestException(
+                    `Invalid file type. Allowed types: ${allowedTypes.join(", ")}`
+                )
+            );
         }
+        const allowedExtensions = AllowedFileExtenstionsEnum[fileMimeType] || [];
+        if (!fileExtension || !allowedExtensions.includes(fileExtension.toLowerCase())) {
+            return cb(
+                new BadRequestException(
+                    `Invalid file extension for ${fileMimeType}. Allowed: ${allowedExtensions.join(", ")}`
+                )
+            );
+        }
+        return cb(null, true);
+    };
+    return multer({
+        storage,
+        fileFilter,
+        limits: { fileSize: 50 * 1024 * 1024 }
+    });
+};
 
-        
-        return multer({fileFilter,storage})
-    }
-
+export const uploadImage = () => uploadMedia([fileTypeEnum.IMAGE]);
 
 export const validateImage = async(req:Request , res:Response ,next:NextFunction)=>{
 
