@@ -27,6 +27,13 @@ export const uploadImageOnCloudinary = async(file:string , folderName:string):Pr
     return result
 }
 
+export const deleteMediaFromCloudinary = async(publicId:string)=>{
+    const result = await cloudinaryV2.uploader.destroy(publicId , {
+        resource_type:"auto"
+    })
+    return result
+}
+
 
 export const deleteImageFromCloudinary = async(publicId:string)=>{
     const result = await cloudinaryV2.uploader.destroy(
