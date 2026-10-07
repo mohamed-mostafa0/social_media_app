@@ -27,7 +27,7 @@ const notificationSchema = new mongoose.Schema<INotification>({
     entityType:{
         type:String,
         // enum:NotificationEntityTypeEnum
-        enum:["Post" , "Comment" , "User"]
+        enum:["Post" , "Comment" , "User" , "Story"]
     },
     message:{
         type:String,

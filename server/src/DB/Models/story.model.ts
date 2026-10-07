@@ -25,6 +25,10 @@ const storySchema = new mongoose.Schema<IStory>(
             type: Number,
             default: 0,
         },
+        likesCount: {
+            type: Number,
+            default: 0,
+        },
         expiresAt: {
             type: Date,
             required: true,

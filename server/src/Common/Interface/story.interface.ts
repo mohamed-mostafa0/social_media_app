@@ -18,6 +18,7 @@ export interface IStory extends Document{
     media:IStoryMedia,
     caption:string,
     viewsCount:number,
+    likesCount:number,
     expiresAt:Date
 }
 

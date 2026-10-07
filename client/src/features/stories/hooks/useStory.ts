@@ -3,6 +3,7 @@ import { StoryService } from "../api/story.service";
 
 export const STORIES_QUERY_KEY = ["stories"];
 export const STORY_QUERY_KEY = (id: string) => ["story", id];
+export const STORY_VIEWERS_QUERY_KEY = (id: string) => ["story-viewers", id];
 
 export const useStories = () => {
   return useQuery({
@@ -20,6 +21,28 @@ export const useStory = (storyId: string) => {
 };
 
 export const getStory = useStory;
+
+export const useStoryViewers = (storyId: string, enabled = true) => {
+  return useQuery({
+    queryKey: STORY_VIEWERS_QUERY_KEY(storyId),
+    queryFn: async () => StoryService.getStoryViewers(storyId),
+    enabled: Boolean(storyId) && enabled,
+  });
+};
+
+export const useToggleStoryLike = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (storyId: string) => StoryService.toggleStoryLike(storyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STORIES_QUERY_KEY });
+    },
+    onError: (error) => {
+      console.error("Failed to toggle story like:", error);
+    },
+  });
+};
 
 export const useAddStory = () => {
   const queryClient = useQueryClient();

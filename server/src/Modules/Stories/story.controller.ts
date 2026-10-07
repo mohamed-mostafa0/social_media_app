@@ -9,4 +9,5 @@ storyController.post("/add" , authentication ,uploadMedia().single("media")  , s
 storyController.post("/view/:storyId" , authentication , storyService.viewStory)
 storyController.delete("/:storyId" , authentication , storyService.deleteStory)
 storyController.get("/stories" , authentication , storyService.getStories)
+storyController.get("/:storyId/viewers" , authentication , storyService.getStoryViewers)
 storyController.get("/:storyId" , authentication , storyService.getStory)

@@ -15,9 +15,23 @@ export interface IStory {
   media: IStoryMedia;
   caption?: string;
   viewsCount: number;
+  likesCount?: number;
+  isLiked?: boolean;
   createdAt: string;
   expiresAt: string;
   isViewed: boolean;
+}
+
+export interface IStoryViewer {
+  _id: string;
+  viewedAt: string;
+  user: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    profilePicture?: string;
+  };
+  hasLiked?: boolean;
 }
 
 export interface IUserStoryGroup {

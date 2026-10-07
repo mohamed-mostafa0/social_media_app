@@ -2,7 +2,8 @@
 export enum NotificationEntityTypeEnum {
     POST = "Post",
     COMMENT = "Comment",
-    USER = "User"
+    USER = "User",
+    STORY = "Story",
 }
 
 export enum NotificattionTypeEnum {

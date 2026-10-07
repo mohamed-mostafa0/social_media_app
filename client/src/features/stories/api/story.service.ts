@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/axios";
-import { IStory, IUserStoryGroup } from "../types/story.types";
+import { IStory, IStoryViewer, IUserStoryGroup } from "../types/story.types";
 
 export const StoryService = {
   getStories: async (): Promise<IUserStoryGroup[]> => {
@@ -11,6 +11,17 @@ export const StoryService = {
   getStory: async (storyId: string): Promise<IStory> => {
     const response = await apiClient.get(`/story/${storyId}`);
     return response.data?.data?.data ?? response.data?.data;
+  },
+
+  getStoryViewers: async (storyId: string): Promise<IStoryViewer[]> => {
+    const response = await apiClient.get(`/story/${storyId}/viewers`);
+    const payload = response.data?.data?.data ?? response.data?.data;
+    return Array.isArray(payload) ? payload : [];
+  },
+
+  toggleStoryLike: async (storyId: string) => {
+    const response = await apiClient.post(`/like/${storyId}`, { onModel: "Story" });
+    return response.data;
   },
 
   addStory: async (body: FormData): Promise<IStory> => {

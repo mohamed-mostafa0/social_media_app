@@ -1,6 +1,6 @@
 import type { Request, Response } from "express"
-import { FollowRepository, StoryRepository, StoryViewerRepository } from "../../../DB/Repositories/index.js"
-import { fileTypeEnum, followStatusEnum, type IRequest, type IStory } from "../../../Common/index.js"
+import { FollowRepository, LikeRepository, StoryRepository, StoryViewerRepository } from "../../../DB/Repositories/index.js"
+import { fileTypeEnum, followStatusEnum, LikeOnModelEnum, type IRequest, type IStory } from "../../../Common/index.js"
 import type { Multer } from "multer"
 import { BadRequestException, deleteMediaFromCloudinary, NotFoundException, successResponse, UnauthorizedException, uploadMediaOnCloudinary } from "../../../Utils/index.js"
 import { unlink } from "node:fs/promises"
@@ -13,6 +13,7 @@ class StoryService {
     private storyRepo:StoryRepository = new StoryRepository()
     private storyViewerRepo:StoryViewerRepository = new StoryViewerRepository()
     private followRepo:FollowRepository = new FollowRepository()
+    private likeRepo:LikeRepository = new LikeRepository()
 
 
     addStory = async (req: Request, res: Response) => {
@@ -148,15 +149,27 @@ class StoryService {
         );
 
         const storyIds = activeStories.map((story: any) => story._id);
-        const viewedRecords = storyIds.length > 0
-            ? await this.storyViewerRepo.findDocuments({
-                  storyId: { $in: storyIds },
-                  ownerId: user._id,
-              })
-            : [];
+        const [viewedRecords, likedRecords] = await Promise.all([
+            storyIds.length > 0
+                ? this.storyViewerRepo.findDocuments({
+                      storyId: { $in: storyIds },
+                      ownerId: user._id,
+                  })
+                : Promise.resolve([]),
+            storyIds.length > 0
+                ? this.likeRepo.findDocuments({
+                      refId: { $in: storyIds },
+                      userId: user._id,
+                      onModel: LikeOnModelEnum.Story,
+                  })
+                : Promise.resolve([]),
+        ]);
 
         const viewedStoryIds = new Set(
             viewedRecords.map((v: any) => v.storyId.toString())
+        );
+        const likedStoryIds = new Set(
+            likedRecords.map((l: any) => l.refId.toString())
         );
 
         const loggedInUserIdStr = user._id.toString();
@@ -215,7 +228,9 @@ class StoryService {
                 _id: story._id,
                 media: story.media,
                 caption: story.caption,
-                viewsCount: story.viewsCount,
+                viewsCount: story.viewsCount || 0,
+                likesCount: story.likesCount || 0,
+                isLiked: likedStoryIds.has(story._id.toString()),
                 createdAt: story.createdAt,
                 expiresAt: story.expiresAt,
                 isViewed,
@@ -283,18 +298,76 @@ class StoryService {
             }
         }
 
-        const isViewed = isOwner
-            ? true
-            : !!(await this.storyViewerRepo.findOneDocument({
-                  storyId: story._id,
-                  ownerId: user._id,
-              }));
+        const [isViewed, isLiked] = await Promise.all([
+            isOwner
+                ? Promise.resolve(true)
+                : this.storyViewerRepo.findOneDocument({
+                      storyId: story._id,
+                      ownerId: user._id,
+                  }).then((doc) => !!doc),
+            this.likeRepo.findOneDocument({
+                refId: story._id,
+                userId: user._id,
+                onModel: LikeOnModelEnum.Story,
+            }).then((doc) => !!doc),
+        ]);
 
         return res.status(200).json(
             successResponse("Story fetched successfully", 200, {
                 ...story,
+                viewsCount: story.viewsCount || 0,
+                likesCount: story.likesCount || 0,
+                isLiked,
                 isViewed,
             })
+        );
+    };
+
+    getStoryViewers = async (req: Request, res: Response) => {
+        const { user } = (req as IRequest).loggedInUser;
+        const { storyId } = req.params;
+
+        if (!storyId || !mongoose.isValidObjectId(storyId)) {
+            throw new BadRequestException("Valid storyId is required");
+        }
+
+        const story = await this.storyRepo.findDocumentById(storyId as string);
+        if (!story) throw new NotFoundException("Story not found");
+
+        if (story.ownerId.toString() !== user._id.toString()) {
+            throw new UnauthorizedException("Only the story owner can view story viewers");
+        }
+
+        const [viewers, likes] = await Promise.all([
+            this.storyViewerRepo.findDocuments(
+                { storyId: story._id },
+                {},
+                {
+                    populate: {
+                        path: "ownerId",
+                        select: "firstName lastName profilePicture",
+                    },
+                    sort: { createdAt: -1 },
+                    lean: true,
+                }
+            ),
+            this.likeRepo.findDocuments({
+                refId: story._id,
+                onModel: LikeOnModelEnum.Story,
+            }),
+        ]);
+
+        const likedUserIds = new Set(likes.map((l: any) => l.userId.toString()));
+
+        const formatted = (viewers as any[]).map((v) => ({
+            _id: v._id,
+            viewedAt: v.viewedAt || v.createdAt,
+            user: v.ownerId,
+            hasLiked: likedUserIds.has(v.ownerId?._id?.toString()),
+        }));
+
+        return res.status(200).json(
+            successResponse("Story viewers fetched successfully", 200, formatted)
         );
     };
 

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express"
-import { BaseRepository, CommentRepository, LikeRepository , PostRepository} from "../../../DB/Repositories/index.js"
+import { BaseRepository, CommentRepository, LikeRepository , PostRepository, StoryRepository} from "../../../DB/Repositories/index.js"
 import { LikeOnModelEnum, NotificationEntityTypeEnum, NotificattionTypeEnum, type IRequest } from "../../../Common/index.js"
 import type { Model, Types } from "mongoose"
 import { BadRequestException, NotFoundException, successResponse } from "../../../Utils/index.js"
@@ -15,11 +15,12 @@ class LikeService {
     private likeRepo:LikeRepository = new LikeRepository()
     private postRepo:PostRepository = new PostRepository()
     private commentRepo:CommentRepository = new CommentRepository()
+    private storyRepo:StoryRepository = new StoryRepository()
     private notificationRepo:NotificationRepository = new NotificationRepository()
     private repoMap:Record<LikeOnModelEnum , BaseRepository<any>> = {
         [LikeOnModelEnum.Post]:this.postRepo,
         [LikeOnModelEnum.Comment]:this.commentRepo,
-
+        [LikeOnModelEnum.Story]:this.storyRepo,
     }
 
     toggleLike = async(req:Request , res:Response)=>{
@@ -28,7 +29,7 @@ class LikeService {
         const {onModel} = req.body as {onModel:LikeOnModelEnum}
 
         const targetRepo = this.repoMap[onModel]
-        if(!targetRepo) throw new BadRequestException("Invalid onModel type. Must be 'Post' or 'Comment'")
+        if(!targetRepo) throw new BadRequestException("Invalid onModel type. Must be 'Post', 'Comment' or 'Story'")
         // console.log(targetRepo);
         
         const targetDoc = await targetRepo.findDocumentById(refId as string)
