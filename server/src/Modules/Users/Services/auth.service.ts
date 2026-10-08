@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { OtpTypeEnum, type IRequest, type IUser, type signupBodyType } from "../../../Common/index.js";
-import { BlackListedTokenRepository, UserRepository } from "../../../DB/Repositories/index.js";
-import { UserModel , BlackListedTokenModel} from "../../../DB/Models/index.js";
+import { OtpTypeEnum, REDIS_KEYS, REDIS_TTL, type IRequest, type IUser, type signupBodyType } from "../../../Common/index.js";
+import {  UserRepository } from "../../../DB/Repositories/index.js";
+import { UserModel } from "../../../DB/Models/index.js";
 import { customAlphabet } from 'nanoid'
 import { BadRequestException, compareHash, ConflictException, eventEmiiter, generateHash, generateToken, successResponse, UnauthorizedException } from "../../../Utils/index.js";
 import { v4 as uuidv4 } from 'uuid';
@@ -14,9 +14,6 @@ const nanoid = customAlphabet("123456789ABCDEFG" , 6)
 class AuthService {
 
     private userRepo:UserRepository = new UserRepository(UserModel)
-    private blackListedRepo:BlackListedTokenRepository = new BlackListedTokenRepository(BlackListedTokenModel)
-
-
 
     signup = async(req:Request , res:Response)=>{
         const {firstName , lastName , email , password , gender ,phoneNumber }:signupBodyType = req.body
@@ -25,7 +22,7 @@ class AuthService {
         if(isEmailExist) throw new ConflictException("Email Already Exist")
 
         const otp = nanoid()
-        await redis.set(`otp:confirm:${email}`, otp , "EX" , 600)
+        await redis.set(REDIS_KEYS.otpConfirm(email), otp , "EX" , REDIS_TTL.OTP)
         eventEmiiter.emit("send-email",{
             to:email,
             subject:"Eamil Confirmation",
@@ -81,13 +78,13 @@ class AuthService {
     confirmEmail = async(req:Request , res:Response)=>{
         const {email , otp} = req.body
 
-        const storedOtp = await redis.get(`otp:confirm:${email}`)
+        const storedOtp = await redis.get(REDIS_KEYS.otpConfirm(email))
         if(!storedOtp) throw new BadRequestException("OTP has expired")
 
         if(storedOtp !== otp) throw new BadRequestException("Incorrect OTP code")
         
         await this.userRepo.findOneupdateDocument({email} , {isVerified:true})
-        await redis.del(`otp:confirm:${email}`)
+        await redis.del(REDIS_KEYS.otpConfirm(email))
 
         return res.status(200).json(successResponse("Email confirmed successfully", 200));
     }
@@ -96,11 +93,11 @@ class AuthService {
     logout = async(req:Request , res:Response)=>{
         const {user , token} = (req as unknown as IRequest).loggedInUser
 
-        const blackListToken =  this.blackListedRepo.createDocument({
-            tokenId:token.jti,
-            expiresAt:new Date(token.exp || Date.now() + 600000)
-        })
-        return res.status(200).json({blackListToken})
+        const nowInSeconds = Math.floor(Date.now()/1000)
+        const remainingSeconds = token.exp? Math.max(1 , token.exp - nowInSeconds) : 3600
+
+        await redis.set(REDIS_KEYS.tokenBlacklist(token.jti as string) , "1" , "EX" , remainingSeconds)
+        return res.status(200).json(successResponse("Logged out"))
     }
 }
 

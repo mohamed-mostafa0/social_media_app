@@ -65,11 +65,6 @@ export interface IEmail {
     content: string
 }
 
-export interface IBlackListedToken {
-    tokenId: string,
-    expiresAt: Date
-}
-
 export interface IRequest extends Request {
     loggedInUser: { user: IUser, token: JwtPayload }
 }
@@ -79,8 +74,4 @@ export interface IFollow extends Document {
     followToId: Types.ObjectId,
     status: followStatusEnum
 }
-// export interface IFriendship extends Document {
-//     requestFromId: Types.ObjectId,
-//     requestToId: Types.ObjectId,
-//     status: friendshipStatusEnum
-// }
+
