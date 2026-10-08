@@ -72,11 +72,6 @@ const userSchema = new mongoose.Schema<IUser>({
         default: false
     },
     phoneNumber: String,
-    OTPs: [{
-        value: { type: String, required: true },
-        expiresAt: { type: Date, default: Date.now() + 600000 },
-        otpType: { type: String, enum: OtpTypeEnum, required: true }
-    }],
     followersCount: {
         type: Number,
         default: 0

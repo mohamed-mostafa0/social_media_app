@@ -4,18 +4,20 @@ import morgan from 'morgan'
 import fs from 'fs'
 import express, { type NextFunction, type Request, type Response } from "express"
 import * as controllers from './Modules/index.js'
-import { dbConnection } from './DB/db.connection.js'
+import { dbConnection } from './DB/Connections/db.connection.js'
 import { failedResponse, HttpException } from './Utils/index.js'
 import { createHandler } from 'graphql-http/lib/use/express'
 import { MainSchema } from './GraphQl/main.gql.js'
 import { authentication } from './Middlewares/authentication.middleware.js'
 import type { IRequest } from './Common/index.js'
 import { ioIntializer } from './Gateways/socket.gateway.js'
+import { redis } from './DB/Connections/redis.connection.js'
 
 
 
 const app = express()
 dbConnection()
+await redis.connect()
 app.use(express.json())
 
 const corsOptions = {

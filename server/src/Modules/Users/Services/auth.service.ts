@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
-import { OtpTypeEnum, type IOTP, type IRequest, type IUser, type signupBodyType } from "../../../Common/index.js";
+import { OtpTypeEnum, type IRequest, type IUser, type signupBodyType } from "../../../Common/index.js";
 import { BlackListedTokenRepository, UserRepository } from "../../../DB/Repositories/index.js";
 import { UserModel , BlackListedTokenModel} from "../../../DB/Models/index.js";
 import { customAlphabet } from 'nanoid'
-import { compareHash, ConflictException, eventEmiiter, generateHash, generateToken, successResponse, UnauthorizedException } from "../../../Utils/index.js";
+import { BadRequestException, compareHash, ConflictException, eventEmiiter, generateHash, generateToken, successResponse, UnauthorizedException } from "../../../Utils/index.js";
 import { v4 as uuidv4 } from 'uuid';
 import type { SignOptions } from "jsonwebtoken";
+import { redis } from "../../../DB/Connections/redis.connection.js";
 
 const nanoid = customAlphabet("123456789ABCDEFG" , 6)
 
@@ -24,20 +25,15 @@ class AuthService {
         if(isEmailExist) throw new ConflictException("Email Already Exist")
 
         const otp = nanoid()
+        await redis.set(`otp:confirm:${email}`, otp , "EX" , 600)
         eventEmiiter.emit("send-email",{
             to:email,
             subject:"Eamil Confirmation",
             content:`Your OTP is ${otp}`
         })
 
-        const confirmationOtp:IOTP = {
-            value:otp,
-            expiresAt: new Date(Date.now() + 600000),
-            otpType:OtpTypeEnum.CONFIRMATION
-        }
-
         const user = await this.userRepo.createDocument({
-            firstName , lastName , gender , email , password , phoneNumber,OTPs:[confirmationOtp]
+            firstName , lastName , gender , email , password , phoneNumber
         })
 
         return res.status(201).json({message:"Registered Successfully" , user})
@@ -80,6 +76,20 @@ class AuthService {
         delete userResponse.OTPs;
 
         return res.status(200).json(successResponse("Logged In" , 200 , {accessToken , refreshToken , user: userResponse}))
+    }
+
+    confirmEmail = async(req:Request , res:Response)=>{
+        const {email , otp} = req.body
+
+        const storedOtp = await redis.get(`otp:confirm:${email}`)
+        if(!storedOtp) throw new BadRequestException("OTP has expired")
+
+        if(storedOtp !== otp) throw new BadRequestException("Incorrect OTP code")
+        
+        await this.userRepo.findOneupdateDocument({email} , {isVerified:true})
+        await redis.del(`otp:confirm:${email}`)
+
+        return res.status(200).json(successResponse("Email confirmed successfully", 200));
     }
 
 

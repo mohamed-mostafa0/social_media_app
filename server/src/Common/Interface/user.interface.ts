@@ -6,11 +6,7 @@ import type { JwtPayload } from "jsonwebtoken"
 
 
 
-export interface IOTP {
-    value: string,
-    expiresAt: Date,
-    otpType: OtpTypeEnum
-}
+
 
 export interface ILocation {
     country?:String,
@@ -51,7 +47,6 @@ export interface IUser extends Document {
     googleId?: string,
     phoneNumber?: string,
     isVerified?: boolean,
-    OTPs?: IOTP[],
     followersCount?:number,
     followingCount?:number,
     postsCount?:number,
