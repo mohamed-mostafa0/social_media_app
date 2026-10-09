@@ -12,12 +12,14 @@ import { authentication } from './Middlewares/authentication.middleware.js'
 import type { IRequest } from './Common/index.js'
 import { ioIntializer } from './Gateways/socket.gateway.js'
 import { redis } from './DB/Connections/redis.connection.js'
+import { globalRateLimiter } from './Middlewares/rate-limiter.middleware.js'
 
 
 
 const app = express()
 dbConnection()
-await redis.connect()
+
+// await redis.connect()
 app.use(express.json())
 
 const corsOptions = {
@@ -31,6 +33,7 @@ var accessLogStream = fs.createWriteStream('access.log')
 app.use(morgan('dev', { stream: accessLogStream }))
 
 const graphqlHandler = createHandler({ schema: MainSchema, context: (req) => ({ user: (req.raw as IRequest).loggedInUser }) })
+app.use("/api", globalRateLimiter)
 app.all("/graphql", authentication, graphqlHandler)
 app.all("/api/graphql", authentication, graphqlHandler)
 

@@ -22,3 +22,8 @@ export class UnauthorizedException extends HttpException{
         super(message , 401 , error)
     }
 }
+export class TooManyRequestsException extends HttpException {
+    constructor(message: string = "Too many requests, please try again later", error?: object) {
+        super(message, 429, error);
+    }
+}
