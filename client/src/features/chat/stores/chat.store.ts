@@ -13,6 +13,7 @@ interface ChatState {
   addMessage: (msg: ChatMessage) => void;
   setMessages: (messages: ChatMessage[]) => void;
   clearMessages: () => void;
+  setActiveUserOnline: (userId: string, isOnline: boolean) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -56,4 +57,12 @@ export const useChatStore = create<ChatState>((set) => ({
   setMessages: (messages) => set({ messages }),
 
   clearMessages: () => set({ messages: [] }),
+
+  setActiveUserOnline: (userId: string, isOnline: boolean) =>
+    set((state) => {
+      if (state.activeUser && state.activeUser.id === userId) {
+        return { activeUser: { ...state.activeUser, isOnline } };
+      }
+      return state;
+    }),
 }));

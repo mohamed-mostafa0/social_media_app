@@ -5,6 +5,7 @@ import { ConversationModel, MessageModel } from "../../../DB/Models/index.js";
 import { conversationTypeEnum, type IRequest } from "../../../Common/index.js";
 import { connectedSockets, getIo, emitToUser } from "../../../Gateways/socket.gateway.js";
 import { failedResponse, successResponse } from "../../../Utils/index.js";
+import presenceService from "../../Users/Services/presence.service.js";
 
 export class ChatService {
 
@@ -46,7 +47,6 @@ export class ChatService {
             conversationId: conversation._id
         });
 
-        // Update conversation's updatedAt timestamp
         await ConversationModel.findByIdAndUpdate(conversation._id, {
             updatedAt: new Date()
         });
@@ -54,14 +54,11 @@ export class ChatService {
         const senderId = socket.data.userId.toString();
         const receiverId = targetUserId.toString();
 
-        // Broadcast to conversation room
         getIo()?.to(conversation._id.toString()).emit("message-sent", message);
 
-        // Ensure all tabs of both sender and target receive message-sent
         emitToUser(senderId, "message-sent", message);
         emitToUser(receiverId, "message-sent", message);
 
-        // Notify both users that their conversation list should be updated
         emitToUser(senderId, "conversation-updated", {
             conversationId: conversation._id,
             targetUserId: receiverId
@@ -84,6 +81,18 @@ export class ChatService {
             .sort({ updatedAt: -1 })
             .lean();
 
+            const otherUserIds = conversations
+                .map((conv) => {
+                    const members = (conv.members || []) as any[];
+                    const other = members.find(
+                        (m) => m && m._id && m._id.toString() !== currentUserId
+                    );
+                    return other?._id?.toString();
+                })
+                .filter((id): id is string => Boolean(id));
+
+            const onlineMap = await presenceService.getOnlineUsersBatch(otherUserIds);
+
             const formattedConversations = await Promise.all(
                 conversations.map(async (conv) => {
                     const members = (conv.members || []) as any[];
@@ -99,9 +108,7 @@ export class ChatService {
                     .sort({ createdAt: -1 })
                     .lean();
 
-                    const isOnline = Boolean(
-                        connectedSockets.get(otherUser._id.toString())?.length
-                    );
+                    const isOnline = onlineMap.get(otherUser._id.toString()) ?? false;
 
                     return {
                         _id: conv._id.toString(),

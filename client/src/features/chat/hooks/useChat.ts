@@ -60,10 +60,19 @@ export function useChat() {
       }
     };
 
+    const handleUserStatus = (data: unknown) => {
+      const status = data as { userId: string; isOnline: boolean };
+      if (status?.userId) {
+        useChatStore.getState().setActiveUserOnline(status.userId, status.isOnline);
+      }
+    };
+
     socket.on("message-sent", handleIncomingMessage);
+    socket.on("user-status", handleUserStatus);
 
     return () => {
       socket.off("message-sent", handleIncomingMessage);
+      socket.off("user-status", handleUserStatus);
     };
   }, [socket, loggedInUser?._id, addMessage]);
 
