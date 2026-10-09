@@ -14,6 +14,8 @@ export function ChatWidget() {
     activeUser,
     messages,
     loggedInUser,
+    isOtherUserTyping,
+    emitTyping,
     closeChat,
     toggleMinimize,
     sendPrivateMessage,
@@ -22,18 +24,32 @@ export function ChatWidget() {
 
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isMinimized, isOpen]);
+  }, [messages, isMinimized, isOpen, isOtherUserTyping]);
 
   if (!isOpen || !activeUser) return null;
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value);
+    emitTyping(true);
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      emitTyping(false);
+    }, 2000);
+  };
 
   const handleSend = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputText.trim()) return;
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    emitTyping(false);
 
     const sent = sendPrivateMessage(inputText);
     if (sent) {
@@ -74,7 +90,11 @@ export function ChatWidget() {
                     isConnected ? "bg-emerald-400" : "bg-red-400"
                   }`}
                 />
-                {isConnected ? "Connected" : "Reconnecting..."}
+                {isOtherUserTyping
+                  ? "typing..."
+                  : isConnected
+                  ? "Connected"
+                  : "Reconnecting..."}
               </p>
             </div>
           </div>
@@ -160,6 +180,16 @@ export function ChatWidget() {
                   );
                 })
               )}
+              {isOtherUserTyping && (
+                <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] text-gray-500 italic bg-white/70 rounded-xl w-fit shadow-2xs border border-gray-100/80 my-1 animate-pulse">
+                  <span>{activeUser.name} is typing</span>
+                  <span className="flex gap-0.5 items-center">
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" />
+                  </span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -171,7 +201,7 @@ export function ChatWidget() {
               <input
                 type="text"
                 value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                onChange={handleInputChange}
                 placeholder={`Message ${activeUser.name}...`}
                 disabled={!isConnected}
                 className="flex-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-colors disabled:opacity-50"

@@ -8,4 +8,5 @@ export const chatInitiation = (socket:Socket)=>{
     const chatEvents = new ChatEvents(socket)
 
     chatEvents.sendPrivateMessage()
+    chatEvents.handleTyping();
 }

@@ -1,10 +1,11 @@
 import type { Request, Response } from "express"
 import { FollowRepository, LikeRepository, StoryRepository, StoryViewerRepository } from "../../../DB/Repositories/index.js"
-import { fileTypeEnum, followStatusEnum, LikeOnModelEnum, type IRequest, type IStory } from "../../../Common/index.js"
+import { fileTypeEnum, followStatusEnum, LikeOnModelEnum, REDIS_KEYS, type IRequest, type IStory } from "../../../Common/index.js"
 import type { Multer } from "multer"
 import { BadRequestException, deleteMediaFromCloudinary, NotFoundException, successResponse, UnauthorizedException, uploadMediaOnCloudinary } from "../../../Utils/index.js"
 import { unlink } from "node:fs/promises"
 import mongoose, { Types } from "mongoose"
+import { redis } from "../../../DB/Connections/redis.connection.js"
 
 
 
@@ -88,19 +89,22 @@ class StoryService {
         let viewer: any = null;
 
         if (!isOwner) {
-            viewer = await this.storyViewerRepo.findOneDocument({
-                storyId: storyId as unknown as Types.ObjectId,
-                ownerId: user._id,
-            });
 
-            if (!viewer) {
+            const isNewView = await redis.sadd(REDIS_KEYS.storyViewers(storyId), user._id.toString())
+
+            if (isNewView === 1) {
+                const remainingSeconds = Math.max(
+                60,
+                Math.floor((new Date(story.expiresAt).getTime() - Date.now()) / 1000)
+                );
+                 await redis.expire(REDIS_KEYS.storyViewers(storyId), remainingSeconds);
                 try {
                     [viewer] = await Promise.all([
                         this.storyViewerRepo.createDocument({
                             storyId: storyId as unknown as Types.ObjectId,
                             ownerId: user._id,
                             expiresAt: story.expiresAt,
-                        }),
+                        }).catch(()=>{}),
                         this.storyRepo.findByIdAndUpdateDocument(storyId as string, {
                             $inc: { viewsCount: 1 },
                         }),

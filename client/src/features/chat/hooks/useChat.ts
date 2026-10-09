@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocket } from "@/components/providers/SocketProvider";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
@@ -24,6 +24,14 @@ export function useChat() {
     addMessage,
     setMessages,
   } = useChatStore();
+
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setIsOtherUserTyping(false);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  }, [activeUser?.id]);
 
   useEffect(() => {
     if (!activeUser?.id) return;
@@ -67,15 +75,43 @@ export function useChat() {
       }
     };
 
+    const handleUserTyping = (data: unknown) => {
+      const payload = data as { userId: string; isTyping: boolean };
+      const currentActive = useChatStore.getState().activeUser;
+      if (currentActive && String(payload?.userId) === String(currentActive.id)) {
+        setIsOtherUserTyping(Boolean(payload.isTyping));
+
+        if (payload.isTyping) {
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsOtherUserTyping(false);
+          }, 3500);
+        }
+      }
+    };
+
     socket.on("message-sent", handleIncomingMessage);
     socket.on("user-status", handleUserStatus);
+    socket.on("user-typing", handleUserTyping);
 
     return () => {
       socket.off("message-sent", handleIncomingMessage);
       socket.off("user-status", handleUserStatus);
+      socket.off("user-typing", handleUserTyping);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [socket, loggedInUser?._id, addMessage]);
 
+  const emitTyping = useCallback(
+    (isTyping: boolean) => {
+      if (!socket || !isConnected || !activeUser?.id) return;
+      socket.emit("typing", {
+        targetUserId: activeUser.id,
+        isTyping,
+      });
+    },
+    [socket, isConnected, activeUser?.id]
+  );
 
   const sendPrivateMessage = useCallback(
     (text: string) => {
@@ -97,7 +133,6 @@ export function useChat() {
     [socket, isConnected, activeUser, queryClient]
   );
 
-
   return {
     socket,
     isConnected,
@@ -106,9 +141,12 @@ export function useChat() {
     isMinimized,
     messages,
     loggedInUser,
+    isOtherUserTyping,
+    emitTyping,
     openChat,
     closeChat,
     toggleMinimize,
     sendPrivateMessage,
   };
 }
+
