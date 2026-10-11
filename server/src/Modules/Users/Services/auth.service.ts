@@ -7,6 +7,7 @@ import { BadRequestException, compareHash, ConflictException, eventEmiiter, gene
 import { v4 as uuidv4 } from 'uuid';
 import type { SignOptions } from "jsonwebtoken";
 import { redis } from "../../../DB/Connections/redis.connection.js";
+import { addSendOtpJob } from "../../../Queues/index.js";
 
 const nanoid = customAlphabet("123456789ABCDEFG" , 6)
 
@@ -23,10 +24,14 @@ class AuthService {
 
         const otp = nanoid()
         await redis.set(REDIS_KEYS.otpConfirm(email), otp , "EX" , REDIS_TTL.OTP)
-        eventEmiiter.emit("send-email",{
+        // eventEmiiter.emit("send-email",{
+        //     to:email,
+        //     subject:"Eamil Confirmation",
+        //     content:`Your OTP is ${otp}`
+        // })
+        await addSendOtpJob({
             to:email,
-            subject:"Eamil Confirmation",
-            content:`Your OTP is ${otp}`
+            otp
         })
 
         const user = await this.userRepo.createDocument({

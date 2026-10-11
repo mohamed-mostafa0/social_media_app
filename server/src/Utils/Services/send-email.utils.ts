@@ -4,7 +4,7 @@ import EventEmitter from "node:events";
 
 
 
-const sendEmail = ({
+export const sendEmail = ({
     content,
     attachments=[],
     to,

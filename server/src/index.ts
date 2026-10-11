@@ -13,11 +13,13 @@ import type { IRequest } from './Common/index.js'
 import { ioIntializer } from './Gateways/socket.gateway.js'
 import { redis } from './DB/Connections/redis.connection.js'
 import { globalRateLimiter } from './Middlewares/rate-limiter.middleware.js'
+import { initAllWorkers } from './Queues/index.js'
 
 
 
 const app = express()
 dbConnection()
+initAllWorkers()
 
 // await redis.connect()
 app.use(express.json())
