@@ -5,6 +5,7 @@ import { BadRequestException, deleteImageFromCloudinary, deleteImagesOnCloudinar
 import { UserModel } from "../../../DB/Models/index.js";
 import type { Types } from "mongoose";
 import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
+import { addDeletePostJob } from "../../../Queues/Post/post.queue.js";
 
 
 
@@ -74,6 +75,8 @@ class PostService {
 
 
         await this.postRepo.findDocumentByIdAndDelete(postId as string)
+
+        await addDeletePostJob({postId:postId as string , ownerId:_id.toString()})
 
         if(post.attachmentsPublicIds?.length){
             await addDeleteImageJob(post.attachmentsPublicIds as string[])
