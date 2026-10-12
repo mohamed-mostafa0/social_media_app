@@ -38,7 +38,7 @@ const storySchema = new mongoose.Schema<IStory>(
     { timestamps: true }
 );
 
-storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+storySchema.index({ expiresAt: 1 });
 
 storySchema.index({ ownerId: 1, expiresAt: 1 });
 
