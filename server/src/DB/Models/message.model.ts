@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import type { IMessage } from "../../Common/index.js";
+import { MessageStatusEnum, type IMessage } from "../../Common/index.js";
 
 
 
@@ -15,9 +15,16 @@ const messageSchema = new mongoose.Schema<IMessage>({
         ref: "User",
         required: true
     },
-    attachments: [String]
+    attachments: [String],
+    status:{
+        type:String,
+        enum:MessageStatusEnum,
+        default:MessageStatusEnum.SENT
+    },
+    deliveredAt:Date,
+    seenAt:Date
 }, {
     timestamps: true
 })
 
-export const MessageModel = mongoose.model<IMessage>("Messages", messageSchema)
+export const MessageModel = mongoose.model<IMessage>("Messages", messageSchema)

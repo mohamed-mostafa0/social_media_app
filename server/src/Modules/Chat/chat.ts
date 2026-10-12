@@ -9,4 +9,5 @@ export const chatInitiation = (socket:Socket)=>{
 
     chatEvents.sendPrivateMessage()
     chatEvents.handleTyping();
+    chatEvents.handleMarkAsSeen();
 }

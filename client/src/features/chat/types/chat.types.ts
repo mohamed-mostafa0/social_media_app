@@ -1,3 +1,5 @@
+export type MessageStatus = "sent" | "delivered" | "seen";
+
 export interface ChatMessage {
   _id?: string;
   text: string;
@@ -5,6 +7,9 @@ export interface ChatMessage {
   senderId: string;
   attachments?: string[];
   createdAt?: string;
+  status?: MessageStatus;
+  deliveredAt?: string;
+  seenAt?: string;
 }
 
 export interface ChatUser {

@@ -1,5 +1,13 @@
 import type { Document, Types } from "mongoose";
 
+
+export enum MessageStatusEnum {
+    SENT = "sent",
+    DELIVERED = "delivered",
+    SEEN = "seen"
+}
+
+
 export interface IMessage extends Document {
     text: string;
     conversationId: Types.ObjectId;
@@ -7,4 +15,7 @@ export interface IMessage extends Document {
     attachments: string[];
     createdAt?: Date;
     updatedAt?: Date;
-}
+    status:MessageStatusEnum,
+    deliveredAt?:Date,
+    seenAt?:Date
+}

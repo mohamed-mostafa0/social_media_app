@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import type { Socket } from "socket.io";
 import { ConversationRepository, MessageRepository } from "../../../DB/Repositories/index.js";
 import { ConversationModel, MessageModel } from "../../../DB/Models/index.js";
-import { conversationTypeEnum, type IRequest } from "../../../Common/index.js";
+import { conversationTypeEnum, MessageStatusEnum, type IRequest } from "../../../Common/index.js";
 import { connectedSockets, getIo, emitToUser } from "../../../Gateways/socket.gateway.js";
 import { failedResponse, successResponse } from "../../../Utils/index.js";
 import presenceService from "../../Users/Services/presence.service.js";
@@ -40,19 +40,24 @@ export class ChatService {
         if (!targetUserId || !text?.trim()) return;
 
         const conversation = await this.joinPrivateChat(socket, targetUserId);
+        const senderId = socket.data.userId.toString();
+        const receiverId = targetUserId.toString();
+
+        const isReceiverOnline = (connectedSockets.get(receiverId)?.length || 0) > 0;
+        const status = isReceiverOnline ? MessageStatusEnum.DELIVERED : MessageStatusEnum.SENT;
+        const deliveredAt = isReceiverOnline ? new Date() : undefined;
 
         const message = await this.messageRepo.createDocument({
             text: text.trim(),
-            senderId: socket.data.userId,
-            conversationId: conversation._id
+            senderId,
+            conversationId: conversation._id,
+            status,
+            deliveredAt
         });
 
         await ConversationModel.findByIdAndUpdate(conversation._id, {
             updatedAt: new Date()
         });
-
-        const senderId = socket.data.userId.toString();
-        const receiverId = targetUserId.toString();
 
         getIo()?.to(conversation._id.toString()).emit("message-sent", message);
 
@@ -175,6 +180,23 @@ export class ChatService {
                     .status(200)
                     .json(successResponse("No messages found", 200, []));
             }
+
+            const seenAt = new Date();
+            await MessageModel.updateMany(
+                {
+                    conversationId: conversation._id,
+                    senderId: targetUserId,
+                    status: { $ne: MessageStatusEnum.SEEN }
+                },
+                {
+                    $set: { status: MessageStatusEnum.SEEN, seenAt }
+                }
+            );
+
+            emitToUser(targetUserId.toString(), "messages-seen", {
+                conversationId: conversation._id.toString(),
+                seenAt
+            });
 
             const messages = await MessageModel.find({
                 conversationId: conversation._id

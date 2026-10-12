@@ -14,6 +14,8 @@ interface ChatState {
   setMessages: (messages: ChatMessage[]) => void;
   clearMessages: () => void;
   setActiveUserOnline: (userId: string, isOnline: boolean) => void;
+  markMessagesAsSeen: (conversationId: string, seenAt: string) => void;
+  markMessagesAsDelivered: (conversationId: string, deliveredAt: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -65,4 +67,22 @@ export const useChatStore = create<ChatState>((set) => ({
       }
       return state;
     }),
+
+  markMessagesAsSeen: (conversationId: string, seenAt: string) =>
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.conversationId === conversationId && m.status !== "seen"
+          ? { ...m, status: "seen", seenAt }
+          : m
+      ),
+    })),
+
+  markMessagesAsDelivered: (conversationId: string, deliveredAt: string) =>
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.conversationId === conversationId && m.status === "sent"
+          ? { ...m, status: "delivered", deliveredAt }
+          : m
+      ),
+    })),
 }));

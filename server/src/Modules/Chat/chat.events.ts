@@ -1,8 +1,9 @@
 import type { Socket } from "socket.io";
 import { ChatService } from "./Services/chat.service.js";
-import { REDIS_KEYS } from "../../Common/index.js";
+import { MessageStatusEnum, REDIS_KEYS } from "../../Common/index.js";
 import { redis } from "../../DB/Connections/redis.connection.js";
 import { emitToUser } from "../../Gateways/socket.gateway.js";
+import { MessageModel } from "../../DB/Models/message.model.js";
 
 
 
@@ -41,4 +42,30 @@ export class ChatEvents {
             }
         })
     }
+    handleMarkAsSeen() {
+  this.socket.on("mark-seen", async (data: { conversationId: string; senderId: string }) => {
+    const currentUserId = this.socket.data?.userId;
+    const { conversationId, senderId } = data; 
+    if (!currentUserId || !conversationId) return;
+
+    const seenAt = new Date();
+
+    await MessageModel.updateMany(
+      {
+        conversationId,
+        senderId,
+        status: { $ne: MessageStatusEnum.SEEN }
+      },
+      {
+        $set: { status: MessageStatusEnum.SEEN, seenAt }
+      }
+    );
+
+    emitToUser(senderId, "messages-seen", {
+      conversationId,
+      seenAt
+    });
+  });
+}
+
 }

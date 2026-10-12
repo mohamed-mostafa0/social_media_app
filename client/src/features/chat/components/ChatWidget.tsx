@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiX, FiMinus, FiSend, FiMaximize2 } from "react-icons/fi";
+import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { Avatar } from "@/components/ui/Avatar";
 import { useChat } from "../hooks/useChat";
 import { formatMessageTime, formatMessageDate, isDifferentDay } from "../utils/chatDate.utils";
@@ -168,11 +169,22 @@ export function ChatWidget() {
                         >
                           <p>{msg.text}</p>
                           <div
-                            className={`text-[9.5px] mt-0 ml-10 flex items-center justify-end select-none font-medium ${
+                            className={`text-[9.5px] mt-0.5 ml-8 flex items-center justify-end gap-1 select-none font-medium ${
                               isMine ? "text-blue-100/90" : "text-gray-400"
                             }`}
                           >
                             <span>{formatMessageTime(msg.createdAt)}</span>
+                            {isMine && (
+                              <span className="inline-flex items-center -mr-0.5">
+                                {msg.status === "seen" ? (
+                                  <IoCheckmarkDone className="w-3.5 h-3.5 text-sky-300" title={`Seen ${msg.seenAt ? `at ${formatMessageTime(msg.seenAt)}` : ""}`} />
+                                ) : msg.status === "delivered" ? (
+                                  <IoCheckmarkDone className="w-3.5 h-3.5 text-blue-200/80" title="Delivered" />
+                                ) : (
+                                  <IoCheckmark className="w-3.5 h-3.5 text-blue-200/80" title="Sent" />
+                                )}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

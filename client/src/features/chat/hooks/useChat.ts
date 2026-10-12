@@ -59,12 +59,28 @@ export function useChat() {
     const handleIncomingMessage = (data: unknown) => {
       const message = data as ChatMessage;
       const currentActive = useChatStore.getState().activeUser;
+      const isChatOpen = useChatStore.getState().isOpen && !useChatStore.getState().isMinimized;
+
       if (
         currentActive &&
         (String(message.senderId) === String(currentActive.id) ||
           String(message.senderId) === String(loggedInUser?._id))
       ) {
         addMessage(message);
+
+        if (isChatOpen && String(message.senderId) === String(currentActive.id) && message.conversationId) {
+          socket.emit("mark-seen", {
+            conversationId: message.conversationId,
+            senderId: currentActive.id,
+          });
+        }
+      }
+    };
+
+    const handleMessagesSeen = (data: unknown) => {
+      const payload = data as { conversationId: string; seenAt: string };
+      if (payload?.conversationId) {
+        useChatStore.getState().markMessagesAsSeen(payload.conversationId, payload.seenAt);
       }
     };
 
@@ -91,16 +107,33 @@ export function useChat() {
     };
 
     socket.on("message-sent", handleIncomingMessage);
+    socket.on("messages-seen", handleMessagesSeen);
     socket.on("user-status", handleUserStatus);
     socket.on("user-typing", handleUserTyping);
 
     return () => {
       socket.off("message-sent", handleIncomingMessage);
+      socket.off("messages-seen", handleMessagesSeen);
       socket.off("user-status", handleUserStatus);
       socket.off("user-typing", handleUserTyping);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [socket, loggedInUser?._id, addMessage]);
+
+  useEffect(() => {
+    if (!socket || !isConnected || !isOpen || isMinimized || !activeUser?.id || messages.length === 0) return;
+
+    const hasUnread = messages.some(
+      (m) => String(m.senderId) === String(activeUser.id) && m.status !== "seen"
+    );
+
+    if (hasUnread && messages[0]?.conversationId) {
+      socket.emit("mark-seen", {
+        conversationId: messages[0].conversationId,
+        senderId: activeUser.id,
+      });
+    }
+  }, [socket, isConnected, isOpen, isMinimized, activeUser?.id, messages]);
 
   const emitTyping = useCallback(
     (isTyping: boolean) => {
