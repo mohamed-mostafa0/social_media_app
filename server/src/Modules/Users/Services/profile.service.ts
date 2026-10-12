@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { BadRequestException, deleteImageFromCloudinary, NotFoundException, successResponse, uploadImageOnCloudinary } from "../../../Utils/index.js";
 import { followStatusEnum, NotificationEntityTypeEnum, NotificattionTypeEnum, type INotification, type IRequest, type IUser } from "../../../Common/index.js";
 import { emitToUser } from "../../../Gateways/socket.gateway.js";
+import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
 
 
 
@@ -23,7 +24,8 @@ class ProfileService {
 
         let result;
         if (user.profilePictureId) {
-            await deleteImageFromCloudinary(user.profilePictureId)
+            // await deleteImageFromCloudinary(user.profilePictureId)
+            await addDeleteImageJob([user.profilePictureId])
         }
         try {
             result = await uploadImageOnCloudinary(file.path, "profile-picture");
@@ -49,7 +51,8 @@ class ProfileService {
 
         let result;
         if (user.coverPictureId) {
-            await deleteImageFromCloudinary(user.coverPictureId)
+            // await deleteImageFromCloudinary(user.coverPictureId)
+            await addDeleteImageJob([user.coverPictureId])
         }
         try {
             result = await uploadImageOnCloudinary(file.path, "cover-picture");

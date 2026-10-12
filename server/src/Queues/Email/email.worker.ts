@@ -2,8 +2,8 @@ import { Job, Worker } from "bullmq"
 import type { SendOtpJobData } from "./email.types.js"
 import { sendEmail } from "../../Utils/index.js"
 import {Redis} from "ioredis";
+import { redisUrl } from "../../DB/Connections/redis.connection.js";
 
-const redisUrl = process.env.REDIS_URL as string;
 
 
 export const initEmailWorker = ()=>{

@@ -4,6 +4,7 @@ import { CommentRepository, FollowRepository, PostRepository, UserRepository } f
 import { BadRequestException, deleteImageFromCloudinary, deleteImagesOnCloudinary, NotFoundException, pagination, successResponse, UnauthorizedException, uploadImageOnCloudinary, uploadImagesOnCloudinary } from "../../../Utils/index.js";
 import { UserModel } from "../../../DB/Models/index.js";
 import type { Types } from "mongoose";
+import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
 
 
 
@@ -63,16 +64,6 @@ class PostService {
     }
 
 
-    // listHomePosts = async (req:Request , res:Response)=>{
-    //     const {page , limit} = req.query
-    //     const {user:{_id}} = (req as IRequest).loggedInUser
-
-    //     const{limit:currentLimit , skip} = pagination({limit:Number(limit) , page:Number(page)})
-    //     const posts = await this.postRepo.postPagination({} , {limit:currentLimit , page:Number(page)})
-
-    //     return res.status(200).json(successResponse("" , 200 , posts))
-    // }
-
     deletePost = async (req: Request, res: Response) => {
         const { postId } = req.params
         const { user: { _id } } = (req as IRequest).loggedInUser
@@ -81,10 +72,13 @@ class PostService {
         if (!post) throw new NotFoundException("Post not found")
         if (post.ownerId.toString() !== _id.toString()) throw new UnauthorizedException("You are not authorized to delete this post")
 
-        await Promise.all([
-            this.postRepo.findDocumentByIdAndDelete(postId as string),
-            deleteImagesOnCloudinary(post.attachmentsPublicIds as string[])
-        ])
+
+        await this.postRepo.findDocumentByIdAndDelete(postId as string)
+
+        if(post.attachmentsPublicIds?.length){
+            await addDeleteImageJob(post.attachmentsPublicIds as string[])
+        }
+
         return res.status(200).json(successResponse("Post deleted successfully", 200))
     }
 
@@ -152,7 +146,8 @@ class PostService {
             describtion !== undefined ? describtion.trim() : post.describtion;
         if (!finalDescribtion && finalAttachments.length === 0) {
             if (newPublicIds.length > 0) {
-                await deleteImagesOnCloudinary(newPublicIds).catch(() => {});
+                // await deleteImagesOnCloudinary(newPublicIds).catch(() => {});
+                await addDeleteImageJob(newPublicIds)
             }
             throw new BadRequestException("Post must have a description or at least one attachment");
         }
@@ -169,12 +164,14 @@ class PostService {
                 { new: true }
             );
             if (publicIdsToDelete.length > 0) {
-                await deleteImagesOnCloudinary(publicIdsToDelete).catch(() => {});
+                // await deleteImagesOnCloudinary(publicIdsToDelete).catch(() => {});
+                await addDeleteImageJob(publicIdsToDelete)
             }
             return res.status(200).json(successResponse("Post updated successfully", 200, updatedPost));
         } catch (error) {
             if (newPublicIds.length > 0) {
-                await deleteImagesOnCloudinary(newPublicIds).catch(() => {});
+                // await deleteImagesOnCloudinary(newPublicIds).catch(() => {});
+                await addDeleteImageJob(newPublicIds)
             }
             throw error;
         }

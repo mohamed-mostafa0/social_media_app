@@ -2,7 +2,8 @@ import type { Request, Response } from "express"
 import { FollowRepository, LikeRepository, StoryRepository, StoryViewerRepository } from "../../../DB/Repositories/index.js"
 import { fileTypeEnum, followStatusEnum, LikeOnModelEnum, REDIS_KEYS, type IRequest, type IStory } from "../../../Common/index.js"
 import type { Multer } from "multer"
-import { BadRequestException, deleteMediaFromCloudinary, NotFoundException, successResponse, UnauthorizedException, uploadMediaOnCloudinary } from "../../../Utils/index.js"
+import { BadRequestException, NotFoundException, successResponse, UnauthorizedException, uploadMediaOnCloudinary } from "../../../Utils/index.js"
+import { addDeleteMediaJob } from "../../../Queues/index.js"
 import { unlink } from "node:fs/promises"
 import mongoose, { Types } from "mongoose"
 import { redis } from "../../../DB/Connections/redis.connection.js"
@@ -63,10 +64,11 @@ class StoryService {
         await Promise.all([
             this.storyRepo.findDocumentByIdAndDelete(storyId as string),
             this.storyViewerRepo.deleteManyDocuments({ storyId: story._id }),
-            story.media?.publicId ?
-                await deleteMediaFromCloudinary(story.media.publicId).catch(() => { }) : Promise.resolve
+        ]);
 
-        ])
+        if (story.media?.publicId) {
+            await addDeleteMediaJob(story.media.publicId);
+        }
 
         return res.status(200).json(successResponse("Story deleted", 200))
     }

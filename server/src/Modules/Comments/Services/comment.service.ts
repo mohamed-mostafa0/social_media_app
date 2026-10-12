@@ -6,6 +6,7 @@ import type { Types } from "mongoose";
 import mongoose from "mongoose";
 import { NotificationRepository } from "../../../DB/Repositories/notification.repository.js";
 import { emitToUser } from "../../../Gateways/socket.gateway.js";
+import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
 
 
 
@@ -115,7 +116,8 @@ export class CommentService {
             });
         } catch (error) {
             if (attachmentData?.publicId) {
-                await deleteImageFromCloudinary(attachmentData.publicId).catch(() => { });
+                // await deleteImageFromCloudinary(attachmentData.publicId).catch(() => { });
+                await addDeleteImageJob([attachmentData.publicId])
             }
             throw error;
         } finally {
@@ -216,7 +218,8 @@ export class CommentService {
         }
 
         if (publicImagesId.length) {
-            await deleteImagesOnCloudinary(publicImagesId).catch(() => {});
+            // await deleteImagesOnCloudinary(publicImagesId).catch(() => {});
+            await addDeleteImageJob(publicImagesId);
         }
 
         return res.status(200).json(successResponse("Comment deleted successfully", 200));
@@ -287,13 +290,15 @@ export class CommentService {
             if (!updatedComment) throw new NotFoundException("Comment not found or has been deleted");
 
             if ((attachmentData || isRemovingAttachment) && comment.attachment?.publicId) {
-                await deleteImageFromCloudinary(comment.attachment.publicId).catch(() => {});
+                // await deleteImageFromCloudinary(comment.attachment.publicId).catch(() => {});
+                await addDeleteImageJob([comment.attachment.publicId])
             }
 
             return res.status(200).json(successResponse("Comment updated successfully", 200, updatedComment));
         } catch (error) {
             if (attachmentData?.publicId) {
-                await deleteImageFromCloudinary(attachmentData.publicId).catch(() => {});
+                // await deleteImageFromCloudinary(attachmentData.publicId).catch(() => {});
+                await addDeleteImageJob([attachmentData.publicId])
             }
             throw error;
         }

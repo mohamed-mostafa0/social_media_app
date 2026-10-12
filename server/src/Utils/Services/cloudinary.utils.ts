@@ -27,23 +27,41 @@ export const uploadImageOnCloudinary = async(file:string , folderName:string):Pr
     return result
 }
 
-export const deleteMediaFromCloudinary = async(publicId:string)=>{
-    const result = await cloudinaryV2.uploader.destroy(publicId , {
-        resource_type:"auto"
-    })
-    return result
-}
+export const deleteMediaFromCloudinary = async (
+    publicId: string,
+    resourceType?: "image" | "video"
+) => {
+    if (resourceType) {
+        return await cloudinaryV2.uploader.destroy(publicId, {
+            resource_type: resourceType,
+            invalidate: true,
+        });
+    }
 
+    const imageResult = await cloudinaryV2.uploader.destroy(publicId, {
+        resource_type: "image",
+        invalidate: true,
+    });
 
-export const deleteImageFromCloudinary = async(publicId:string)=>{
-    const result = await cloudinaryV2.uploader.destroy(
-        publicId,
-        {
-            resource_type:"image"
-        }
-    )
-    return result
-}
+    if (imageResult.result === "ok") {
+        return imageResult;
+    }
+
+    const videoResult = await cloudinaryV2.uploader.destroy(publicId, {
+        resource_type: "video",
+        invalidate: true,
+    });
+
+    return videoResult;
+};
+
+export const deleteImageFromCloudinary = async (publicId: string) => {
+    const result = await cloudinaryV2.uploader.destroy(publicId, {
+        resource_type: "image",
+        invalidate: true,
+    });
+    return result;
+};
 
 export const uploadImagesOnCloudinary = async(files:string[] , folderName:string):Promise<UploadApiResponse[]>=>{
     const uploadPromises = files.map(file => uploadImageOnCloudinary(file, folderName));
