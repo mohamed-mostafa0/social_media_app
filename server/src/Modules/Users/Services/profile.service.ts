@@ -4,8 +4,8 @@ import { UserModel } from "../../../DB/Models/index.js";
 import mongoose from "mongoose";
 import { BadRequestException, deleteImageFromCloudinary, NotFoundException, successResponse, uploadImageOnCloudinary } from "../../../Utils/index.js";
 import { followStatusEnum, NotificationEntityTypeEnum, NotificattionTypeEnum, type INotification, type IRequest, type IUser } from "../../../Common/index.js";
-import { emitToUser } from "../../../Gateways/socket.gateway.js";
 import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
+import { addNotificationJob } from "../../../Queues/index.js";
 
 
 
@@ -136,7 +136,6 @@ class ProfileService {
         let message: string = '';
         let notificationMessage:string= '' 
         let statusCode = 200;
-        let createdNotification:any = null
         let shouldNotify = false
 
         const session = await mongoose.startSession()
@@ -151,10 +150,12 @@ class ProfileService {
                     }, { session });
 
                     if (existingFollow.status === followStatusEnum.ACCEPTED) {
-                        targetUser.followersCount = Math.max(0, (targetUser.followersCount || 0) - 1);
-                        user.followingCount = Math.max(0, (user.followingCount || 0) - 1);
-                        await targetUser.save({session});
-                        await user.save({session});
+                        await this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
+                            $inc: { followersCount: -1 }
+                        }, { session });
+                        await this.userRepo.findByIdAndUpdateDocument(user._id, {
+                            $inc: { followingCount: -1 }
+                        }, { session });
                         message = "User unfollowed successfully";
                     } else {
                         message = "Follow request cancelled successfully";
@@ -173,21 +174,23 @@ class ProfileService {
                         notificationMessage =` requested to follow you`
                         message = "Follow request sent successfully";
                     } else {
-                        targetUser.followersCount = (targetUser.followersCount || 0) + 1;
-                        user.followingCount = (user.followingCount || 0) + 1;
-                        await targetUser.save({session});
-                        await user.save({session});
+                        await this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
+                            $inc: { followersCount: 1 }
+                        }, { session });
+                        await this.userRepo.findByIdAndUpdateDocument(user._id, {
+                            $inc: { followingCount: 1 }
+                        }, { session });
                         notificationMessage = ` started following you`
                         message = "User followed successfully";
                     }
-                    createdNotification = await this.notificationRepo.createDocument({
-                        senderId:user._id,
-                        recipientId:targetUser._id,
-                        type:NotificattionTypeEnum.FOLLOW,
-                        entityId:user._id,
-                        entityType:NotificationEntityTypeEnum.USER,
-                        message:notificationMessage
-                    } , {session})
+                    // createdNotification = await this.notificationRepo.createDocument({
+                    //     senderId:user._id,
+                    //     recipientId:targetUser._id,
+                    //     type:NotificattionTypeEnum.FOLLOW,
+                    //     entityId:user._id,
+                    //     entityType:NotificationEntityTypeEnum.USER,
+                    //     message:notificationMessage
+                    // } , {session})
                     statusCode = 201;
                 }
             })
@@ -198,24 +201,20 @@ class ProfileService {
 
         if (shouldNotify) {
             const notificationPayload = {
-                _id: createdNotification._id,
                 message: notificationMessage,
                 type: NotificattionTypeEnum.FOLLOW,
+                recipientId: targetUser._id,
                 entityId: user._id,
-                entityType:NotificationEntityTypeEnum.USER,
-                createdAt: new Date().toISOString(),
-                isRead: false,
+                entityType: NotificationEntityTypeEnum.USER,
                 sender: {
                     _id: user._id,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     profilePicture: user.profilePicture
                 },
-
-                
             };
-            emitToUser(targetUser._id.toString(), "notification", notificationPayload);
-        };
+            await addNotificationJob(notificationPayload);
+        }
 
         return res.status(statusCode).json(successResponse(message, statusCode));
     };
@@ -262,7 +261,6 @@ class ProfileService {
         const session = await mongoose.startSession()
         let message = ''
         let shouldNotify = false
-        let createdNotification:any = null
         const notificationMessage = ` accepted your follow request`
         try{
             await session.withTransaction(async()=>{
@@ -270,21 +268,13 @@ class ProfileService {
                 if (response === "accept") {
                     shouldNotify = true
                     existingFollow.status = followStatusEnum.ACCEPTED;
-                        await existingFollow.save({session}),
-                        this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
-                            $inc: { followingCount: 1 }
-                        } , {session}),
-                        await this.userRepo.findByIdAndUpdateDocument(user._id, {
-                            $inc: { followersCount: 1 }
-                        } , {session})
-                        createdNotification = await this.notificationRepo.createDocument({
-                            senderId:user._id,
-                            recipientId:targetUser._id,
-                            type:NotificattionTypeEnum.FOLLOW,
-                            entityId:user._id,
-                            entityType:NotificationEntityTypeEnum.USER,
-                            message:notificationMessage
-                        }, {session})
+                    await existingFollow.save({session});
+                    await this.userRepo.findByIdAndUpdateDocument(targetUser._id, {
+                        $inc: { followingCount: 1 }
+                    }, {session});
+                    await this.userRepo.findByIdAndUpdateDocument(user._id, {
+                        $inc: { followersCount: 1 }
+                    }, {session});
                     message = 'Follow request accepted'
         
                 } else {
@@ -299,13 +289,11 @@ class ProfileService {
         }
         if(shouldNotify){
             const notificationPayload = {
-                _id: createdNotification._id,
                 message: notificationMessage,
+                recipientId:targetUser._id,
                 type: NotificattionTypeEnum.FOLLOW,
                 entityId: user._id,
                 entityType: NotificationEntityTypeEnum.USER,
-                createdAt: new Date().toISOString(),
-                isRead: false,
                 sender: {
                     _id: user._id,
                     firstName: user.firstName,
@@ -314,7 +302,8 @@ class ProfileService {
                 },
                 
             };
-                emitToUser(targetUser._id.toString(), "notification", notificationPayload);
+                // emitToUser(targetUser._id.toString(), "notification", notificationPayload);
+                await addNotificationJob(notificationPayload)
         }
         return res.status(200).json(successResponse(message, 200));
     }

@@ -4,9 +4,8 @@ import { CommentRepository, FollowRepository, PostRepository, UserRepository } f
 import { BadRequestException, deleteImageFromCloudinary, deleteImagesOnCloudinary, NotFoundException, pagination, successResponse, UnauthorizedException, uploadImageOnCloudinary, uploadImagesOnCloudinary } from "../../../Utils/index.js";
 import type { Types } from "mongoose";
 import mongoose from "mongoose";
-import { NotificationRepository } from "../../../DB/Repositories/notification.repository.js";
-import { emitToUser } from "../../../Gateways/socket.gateway.js";
 import { addDeleteImageJob } from "../../../Queues/Cloudinary/cloudinary.queue.js";
+import { addNotificationJob } from "../../../Queues/index.js";
 
 
 
@@ -16,7 +15,6 @@ export class CommentService {
 
     private postRepo: PostRepository = new PostRepository()
     private commentRepo: CommentRepository = new CommentRepository()
-    private notificationRepo:NotificationRepository = new NotificationRepository()
 
 
         addComment = async (req: Request, res: Response) => {
@@ -63,7 +61,6 @@ export class CommentService {
         const session = await mongoose.startSession();
         let comment: IComment | null = null;
         let notificationMessage = "";
-        let createdNotification: any = null;
         let recipientId: string | null = null;
         let shouldNotify = false
 
@@ -101,15 +98,7 @@ export class CommentService {
                     { session }
                 );
                 if(recipientId){
-                    shouldNotify = true
-                    createdNotification = await this.notificationRepo.createDocument({
-                        senderId: user._id,
-                        recipientId: recipientId as unknown as Types.ObjectId,
-                        type: NotificattionTypeEnum.COMMENT,
-                        entityId: postId as unknown as Types.ObjectId,
-                        entityType:NotificationEntityTypeEnum.POST,
-                        message:notificationMessage
-                    } , {session})
+                    shouldNotify = true;
                 }
                 
                 if (!updatedPost) throw new NotFoundException("Post not found");
@@ -124,28 +113,25 @@ export class CommentService {
             await session.endSession();
         }
 
-       if (recipientId && createdNotification) {
+        if (recipientId && shouldNotify) {
             const notificationPayload = {
-                _id: createdNotification._id,
                 message: notificationMessage,
                 type: NotificattionTypeEnum.COMMENT,
-                entityId: postId,
+                recipientId,
+                entityId: postId as string,
                 entityType: NotificationEntityTypeEnum.POST,
-                createdAt: new Date().toISOString(),
-                isRead: false,
                 sender: {
                     _id: user._id,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     profilePicture: user.profilePicture
                 },
-                
             };
-            emitToUser(recipientId, "notification", notificationPayload);
-        };
+            await addNotificationJob(notificationPayload);
+        }
             
         return res.status(201).json(successResponse("Comment added successfully", 201, comment));
-}
+    }
 
     deleteComment = async (req: Request, res: Response) => {
         const { user: { _id } } = (req as IRequest).loggedInUser;

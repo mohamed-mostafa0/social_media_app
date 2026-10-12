@@ -5,7 +5,7 @@ import type { Model, Types } from "mongoose"
 import { BadRequestException, NotFoundException, successResponse } from "../../../Utils/index.js"
 import mongoose from "mongoose"
 import { NotificationRepository } from "../../../DB/Repositories/notification.repository.js"
-import { emitToUser } from "../../../Gateways/socket.gateway.js"
+import { addNotificationJob } from "../../../Queues/index.js"
 
 
 
@@ -43,10 +43,9 @@ class LikeService {
         })
 
         let message = ''
-        let isSelfAction =user._id.toString() === targetDoc.ownerId.toString() 
+        const isSelfAction = user._id.toString() === targetDoc.ownerId.toString() 
         const notificationMessage = `${user.firstName} ${user.lastName} liked your ${onModel.toLocaleLowerCase()}`
         let shouldNotify = false
-        let createdNotification: any = null
         const session = await mongoose.startSession()
         try{
             await session.withTransaction(async()=>{                
@@ -77,15 +76,6 @@ class LikeService {
                     }, { session })
 
                     if(!isSelfAction){
-                        const created = await this.notificationRepo.createDocument({
-                            senderId: user._id,
-                            recipientId: targetDoc.ownerId,
-                            type: NotificattionTypeEnum.LIKE,
-                            entityId: refId as unknown as Types.ObjectId,
-                            entityType: onModel,
-                            message: notificationMessage
-                        }, { session })
-                        createdNotification = created
                         shouldNotify = true
                     }
 
@@ -97,22 +87,19 @@ class LikeService {
         }
 
         if(shouldNotify){
-            const notificationPayload = {
-                _id: createdNotification?._id,
+            await addNotificationJob({
                 message: notificationMessage,
+                recipientId: targetDoc.ownerId,
                 type: NotificattionTypeEnum.LIKE,
-                entityId: refId,
+                entityId: refId as string,
                 entityType: onModel,
-                createdAt: new Date().toISOString(),
-                isRead: false,
                 sender: {
                     _id: user._id,
                     firstName: user.firstName,
                     lastName: user.lastName,
                     profilePicture: user.profilePicture
                 },
-            };
-            emitToUser(targetDoc.ownerId.toString(), "notification", notificationPayload);
+            });
         }
 
         return res.status(200).json(successResponse(message , 200 ))
