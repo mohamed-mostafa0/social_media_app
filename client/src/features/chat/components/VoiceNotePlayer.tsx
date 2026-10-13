@@ -67,7 +67,7 @@ export function VoiceNotePlayer({ url, duration = 0, isMine }: VoiceNotePlayerPr
   };
 
   return (
-    <div className="flex items-center gap-2.5 py-1 px-1 w-52 sm:w-60 select-none">
+    <div className="flex items-center gap-2 sm:gap-2.5 py-1 px-0.5 w-full max-w-[200px] sm:max-w-[240px] select-none">
       <audio
         ref={audioRef}
         src={url}
@@ -85,7 +85,7 @@ export function VoiceNotePlayer({ url, duration = 0, isMine }: VoiceNotePlayerPr
       <button
         type="button"
         onClick={togglePlay}
-        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 cursor-pointer shadow-xs ${
+        className={`w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 cursor-pointer shadow-xs ${
           isMine
             ? "bg-white text-blue-600 hover:bg-blue-50"
             : "bg-blue-600 text-white hover:bg-blue-700"
@@ -100,7 +100,7 @@ export function VoiceNotePlayer({ url, duration = 0, isMine }: VoiceNotePlayerPr
       </button>
 
       <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
-        <div className="flex items-center gap-[2.5px] h-6 cursor-pointer">
+        <div className="flex items-center gap-[2px] sm:gap-[2.5px] h-6 cursor-pointer">
           {barHeights.map((height, i) => {
             const barProgress = ((i + 1) / barHeights.length) * 100;
             const isPlayed = barProgress <= progress;
@@ -110,7 +110,7 @@ export function VoiceNotePlayer({ url, duration = 0, isMine }: VoiceNotePlayerPr
                 key={i}
                 onClick={() => handleSeek(i)}
                 style={{ height: `${height}%` }}
-                className={`w-[2.5px] rounded-full transition-colors duration-100 ${
+                className={`w-[2px] sm:w-[2.5px] rounded-full transition-colors duration-100 ${
                   isMine
                     ? isPlayed
                       ? "bg-white"

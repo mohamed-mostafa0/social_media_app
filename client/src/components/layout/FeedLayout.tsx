@@ -6,6 +6,7 @@ import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { TopNavbar } from "./TopNavbar";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { ConversationsDrawer } from "./ConversationsDrawer";
 import { ChatWidget } from "@/features/chat";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 
@@ -64,6 +65,7 @@ export function FeedLayout({ children }: FeedLayoutProps) {
 
       <ChatWidget />
       <MobileBottomNav />
+      <ConversationsDrawer />
     </div>
   );
 }

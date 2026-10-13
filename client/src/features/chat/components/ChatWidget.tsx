@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiMinus, FiSend, FiMaximize2, FiMic, FiTrash2 } from "react-icons/fi";
+import { FiX, FiMinus, FiSend, FiMaximize2, FiMinimize2, FiMic, FiTrash2 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { Avatar } from "@/components/ui/Avatar";
 import { useChat } from "../hooks/useChat";
@@ -28,6 +28,7 @@ export function ChatWidget() {
 
   const [inputText, setInputText] = useState("");
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -120,68 +121,102 @@ export function ChatWidget() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 40, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="fixed bottom-18 sm:bottom-20 lg:bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm sm:w-88 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+        className={
+          isMinimized
+            ? "fixed bottom-16 sm:bottom-4 inset-x-3 sm:inset-auto sm:right-6 z-50 sm:w-80 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden flex flex-col"
+            : isExpanded
+            ? "fixed inset-0 sm:inset-auto sm:bottom-4 sm:right-6 z-50 w-full sm:w-[460px] h-full sm:h-[640px] sm:max-w-[calc(100vw-3rem)] sm:max-h-[calc(100vh-2rem)] bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border sm:border-gray-200 overflow-hidden flex flex-col"
+            : "fixed inset-x-0 bottom-0 sm:inset-auto sm:bottom-4 sm:right-6 z-50 w-full sm:w-88 h-[80vh] max-h-[600px] sm:h-[480px] bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border-t sm:border border-gray-200 overflow-hidden flex flex-col"
+        }
       >
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white flex items-center justify-between select-none">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative">
-              <Avatar
-                size="sm"
-                src={activeUser.avatar || "/default-avatar-profile.webp"}
-                alt={activeUser.name}
-              />
-              <span
-                className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${
-                  activeUser.isOnline !== false ? "bg-emerald-400" : "bg-gray-400"
-                }`}
-              />
-            </div>
-            <div className="min-w-0">
-              <h4 className="text-xs sm:text-sm font-bold truncate">
-                {activeUser.name}
-              </h4>
-              <p className="text-[10px] text-blue-100 flex items-center gap-1">
+        <div
+          onClick={isMinimized ? toggleMinimize : undefined}
+          className={`bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 sm:px-4 py-2.5 sm:py-3 text-white flex flex-col select-none ${
+            isMinimized ? "cursor-pointer" : ""
+          }`}
+        >
+          {!isMinimized && !isExpanded && (
+            <div className="w-8 h-1 bg-white/40 rounded-full mx-auto mb-1.5 sm:hidden" />
+          )}
+
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative">
+                <Avatar
+                  size="sm"
+                  src={activeUser.avatar || "/default-avatar-profile.webp"}
+                  alt={activeUser.name}
+                />
                 <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isConnected ? "bg-emerald-400" : "bg-red-400"
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-white ${
+                    activeUser.isOnline !== false ? "bg-emerald-400" : "bg-gray-400"
                   }`}
                 />
-                {isOtherUserTyping
-                  ? "typing..."
-                  : isConnected
-                  ? "Connected"
-                  : "Reconnecting..."}
-              </p>
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs sm:text-sm font-bold truncate">
+                  {activeUser.name}
+                </h4>
+                <p className="text-[10px] text-blue-100 flex items-center gap-1">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isConnected ? "bg-emerald-400" : "bg-red-400"
+                    }`}
+                  />
+                  {isOtherUserTyping
+                    ? "typing..."
+                    : isConnected
+                    ? "Connected"
+                    : "Reconnecting..."}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={toggleMinimize}
-              className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
-              title={isMinimized ? "Maximize" : "Minimize"}
+            <div
+              className="flex items-center gap-0.5 sm:gap-1"
+              onClick={(e) => e.stopPropagation()}
             >
-              {isMinimized ? (
-                <FiMaximize2 className="w-3.5 h-3.5" />
-              ) : (
-                <FiMinus className="w-3.5 h-3.5" />
+              {!isMinimized && (
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
+                  title={isExpanded ? "Collapse" : "Expand"}
+                >
+                  {isExpanded ? (
+                    <FiMinimize2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <FiMaximize2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
               )}
-            </button>
-            <button
-              type="button"
-              onClick={closeChat}
-              className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
-              title="Close chat"
-            >
-              <FiX className="w-3.5 h-3.5" />
-            </button>
+              <button
+                type="button"
+                onClick={toggleMinimize}
+                className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
+                title={isMinimized ? "Restore" : "Minimize"}
+              >
+                {isMinimized ? (
+                  <FiMaximize2 className="w-3.5 h-3.5" />
+                ) : (
+                  <FiMinus className="w-3.5 h-3.5" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={closeChat}
+                className="p-1.5 hover:bg-white/20 rounded-lg text-white/90 hover:text-white transition-colors cursor-pointer"
+                title="Close chat"
+              >
+                <FiX className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
         {!isMinimized && (
           <>
-            <div className="h-72 overflow-y-auto p-4 space-y-2 bg-[#F8FAFC] flex flex-col">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 bg-[#F8FAFC] flex flex-col min-h-0">
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-400">
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-2">
@@ -216,7 +251,7 @@ export function ChatWidget() {
 
                       <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-xs leading-relaxed break-words shadow-xs ${
+                          className={`max-w-[85%] sm:max-w-[80%] px-3.5 py-2 rounded-2xl text-xs sm:text-[13px] leading-relaxed break-words shadow-xs ${
                             isMine
                               ? "bg-blue-600 text-white rounded-br-xs"
                               : "bg-white text-gray-800 border border-gray-100 rounded-bl-xs"
@@ -270,7 +305,7 @@ export function ChatWidget() {
             </div>
 
             {isRecording || isUploadingVoice ? (
-              <div className="p-2.5 bg-white border-t border-gray-100 flex items-center justify-between gap-3">
+              <div className="p-2 sm:p-2.5 bg-white border-t border-gray-100 flex items-center justify-between gap-2 sm:gap-3">
                 <div className="flex items-center gap-2 text-rose-500 font-medium text-xs min-w-0">
                   <span className="relative flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -311,7 +346,7 @@ export function ChatWidget() {
             ) : (
               <form
                 onSubmit={handleSend}
-                className="p-2.5 bg-white border-t border-gray-100 flex items-center gap-2"
+                className="p-2 sm:p-2.5 bg-white border-t border-gray-100 flex items-center gap-1.5 sm:gap-2 pb-3 sm:pb-2.5"
               >
                 <input
                   type="text"
@@ -319,7 +354,7 @@ export function ChatWidget() {
                   onChange={handleInputChange}
                   placeholder={`Message ${activeUser.name}...`}
                   disabled={!isConnected}
-                  className="flex-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-colors disabled:opacity-50"
+                  className="flex-1 px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-colors disabled:opacity-50"
                 />
                 <button
                   type="button"

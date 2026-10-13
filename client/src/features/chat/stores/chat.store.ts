@@ -5,11 +5,15 @@ interface ChatState {
   activeUser: ChatUser | null;
   isOpen: boolean;
   isMinimized: boolean;
+  isConversationsOpen: boolean;
   messages: ChatMessage[];
 
   openChat: (user: ChatUser) => void;
   closeChat: () => void;
   toggleMinimize: () => void;
+  openConversations: () => void;
+  closeConversations: () => void;
+  toggleConversations: () => void;
   addMessage: (msg: ChatMessage) => void;
   setMessages: (messages: ChatMessage[]) => void;
   clearMessages: () => void;
@@ -22,6 +26,7 @@ export const useChatStore = create<ChatState>((set) => ({
   activeUser: null,
   isOpen: false,
   isMinimized: false,
+  isConversationsOpen: false,
   messages: [],
 
   openChat: (user) =>
@@ -29,6 +34,7 @@ export const useChatStore = create<ChatState>((set) => ({
       activeUser: user,
       isOpen: true,
       isMinimized: false,
+      isConversationsOpen: false,
     }),
 
   closeChat: () =>
@@ -41,6 +47,21 @@ export const useChatStore = create<ChatState>((set) => ({
   toggleMinimize: () =>
     set((state) => ({
       isMinimized: !state.isMinimized,
+    })),
+
+  openConversations: () =>
+    set({
+      isConversationsOpen: true,
+    }),
+
+  closeConversations: () =>
+    set({
+      isConversationsOpen: false,
+    }),
+
+  toggleConversations: () =>
+    set((state) => ({
+      isConversationsOpen: !state.isConversationsOpen,
     })),
 
   addMessage: (msg) =>

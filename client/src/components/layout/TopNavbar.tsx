@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { FiSearch, FiBookmark, FiX } from "react-icons/fi";
+import { FiSearch, FiBookmark, FiX, FiMessageSquare } from "react-icons/fi";
 import { IconButton } from "../ui/IconButton";
 import Link from "next/link";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useFollowRequests } from "@/features/profile";
 import { UserNavDropdown } from "./UserNavDropdown";
 import { NotificationDropdown } from "@/features/notifications";
+import { useChatStore } from "@/features/chat";
 
 export function TopNavbar() {
   const isAuth = useAuthStore((state) => state.isAuth);
   const { data: requests = [] } = useFollowRequests();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const toggleConversations = useChatStore((state) => state.toggleConversations);
+  const isConversationsOpen = useChatStore((state) => state.isConversationsOpen);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-100 px-3.5 sm:px-6 py-2.5 sm:py-3">
@@ -59,6 +62,21 @@ export function TopNavbar() {
           </button>
 
           {isAuth && <NotificationDropdown />}
+
+          {isAuth && (
+            <button
+              type="button"
+              onClick={toggleConversations}
+              className={`xl:hidden p-2 rounded-xl transition-colors cursor-pointer relative ${
+                isConversationsOpen
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+              title="Messages"
+            >
+              <FiMessageSquare className="w-5 h-5" />
+            </button>
+          )}
 
           <IconButton variant="ghost" size="md" className="hidden sm:inline-flex">
             <FiBookmark className="w-5 h-5" />

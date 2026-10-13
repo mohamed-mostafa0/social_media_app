@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiUsers, FiEdit3, FiUser } from "react-icons/fi";
+import { FiHome, FiUsers, FiEdit3, FiUser, FiMessageSquare } from "react-icons/fi";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 import { useFollowRequests } from "@/features/profile";
+import { useChatStore } from "@/features/chat";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const isAuth = useAuthStore((state) => state.isAuth);
   const { data: requests = [] } = useFollowRequests();
+  const isConversationsOpen = useChatStore((state) => state.isConversationsOpen);
+  const openConversations = useChatStore((state) => state.openConversations);
 
   const handleCreatePostClick = () => {
     if (pathname === "/") {
@@ -47,6 +50,13 @@ export function MobileBottomNav() {
       isAction: true,
     },
     {
+      name: "Chat",
+      action: openConversations,
+      icon: FiMessageSquare,
+      isChatAction: true,
+      isActive: isConversationsOpen,
+    },
+    {
       name: "Profile",
       href: user ? `/profile/${user._id}` : "/profile",
       isProfile: true,
@@ -72,6 +82,31 @@ export function MobileBottomNav() {
                 <span className="text-[10px] font-medium text-gray-500 mt-0.5">
                   {item.name}
                 </span>
+              </button>
+            );
+          }
+
+          if (item.isChatAction) {
+            const Icon = item.icon!;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                onClick={item.action}
+                className={`flex flex-col items-center justify-center p-1.5 relative transition-colors cursor-pointer ${
+                  item.isActive
+                    ? "text-blue-600 font-semibold"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <div className="relative">
+                  <Icon
+                    className={`w-5 h-5 transition-transform ${
+                      item.isActive ? "scale-110" : ""
+                    }`}
+                  />
+                </div>
+                <span className="text-[10px] mt-1 font-medium">{item.name}</span>
               </button>
             );
           }

@@ -1,15 +1,16 @@
-"use client";
-
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
-import { FiEdit, FiSearch, FiMessageSquare } from "react-icons/fi";
+import { FiEdit, FiSearch, FiMessageSquare, FiX } from "react-icons/fi";
 import { useState } from "react";
 import { FollowRequestsList, useFollowRequests } from "@/features/profile";
 import { useChatStore, useConversations, formatMessageTime } from "@/features/chat";
 
+interface RightSidebarProps {
+  isDrawer?: boolean;
+  onClose?: () => void;
+}
 
-
-export function RightSidebar() {
+export function RightSidebar({ isDrawer = false, onClose }: RightSidebarProps) {
   const [activeTab, setActiveTab] = useState("Primary");
   const [searchQuery, setSearchQuery] = useState("");
   const { data: requests = [] } = useFollowRequests();
@@ -20,18 +21,32 @@ export function RightSidebar() {
     c.otherUser?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <aside className="w-80 h-[calc(100vh-65px)] sticky top-[65px] flex flex-col pt-6 pb-4 pl-6 overflow-y-auto scrollbar-hide">
-      
-      <div className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100 flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-900">
-            {activeTab === "Requests" ? "Follow Requests" : "Messages"}
-          </h3>
-          <button className="text-gray-400 hover:text-gray-900 transition-colors">
+  const sidebarContent = (
+    <div
+      className={`bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 flex-1 flex flex-col min-h-0 ${
+        isDrawer ? "h-full rounded-none border-none shadow-none" : "mb-6 shadow-sm"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-gray-900">
+          {activeTab === "Requests" ? "Follow Requests" : "Messages"}
+        </h3>
+        <div className="flex items-center gap-1">
+          <button className="text-gray-400 hover:text-gray-900 transition-colors p-1" title="New Message">
             <FiEdit className="w-4 h-4" />
           </button>
+          {isDrawer && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              title="Close"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+          )}
         </div>
+      </div>
 
         {activeTab !== "Requests" && (
           <div className="relative mb-4">
@@ -115,14 +130,15 @@ export function RightSidebar() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.04 }}
-                onClick={() =>
+                onClick={() => {
                   openChat({
                     id: conv.otherUser._id,
                     name: conv.otherUser.name,
                     avatar: conv.otherUser.avatar || undefined,
                     isOnline: conv.otherUser.isOnline,
-                  })
-                }
+                  });
+                  onClose?.();
+                }}
                 className="flex items-center gap-3 cursor-pointer group hover:bg-gray-50 p-2 rounded-xl transition-colors"
               >
                 <div className="shrink-0">
@@ -161,6 +177,15 @@ export function RightSidebar() {
           </button>
         )}
       </div>
+    );
+
+  if (isDrawer) {
+    return <div className="w-full h-full flex flex-col">{sidebarContent}</div>;
+  }
+
+  return (
+    <aside className="w-80 h-[calc(100vh-65px)] sticky top-[65px] flex flex-col pt-6 pb-4 pl-6 overflow-y-auto scrollbar-hide">
+      {sidebarContent}
     </aside>
   );
 }
