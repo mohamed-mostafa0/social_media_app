@@ -4,7 +4,7 @@ import { ConversationRepository, MessageRepository } from "../../../DB/Repositor
 import { ConversationModel, MessageModel } from "../../../DB/Models/index.js";
 import { conversationTypeEnum, MessageStatusEnum, type IRequest } from "../../../Common/index.js";
 import { connectedSockets, getIo, emitToUser } from "../../../Gateways/socket.gateway.js";
-import { failedResponse, successResponse } from "../../../Utils/index.js";
+import { BadRequestException, failedResponse, successResponse, uploadAudioOnCloudinary } from "../../../Utils/index.js";
 import presenceService from "../../Users/Services/presence.service.js";
 
 export class ChatService {
@@ -212,6 +212,65 @@ export class ChatService {
                 .status(500)
                 .json(failedResponse("Failed to fetch messages", 500, error as object));
         }
+    };
+
+    sendVoiceNote = async (req: Request, res: Response) => {
+        const file = req.file;
+        const { user } = (req as unknown as IRequest).loggedInUser;
+        const { targetUserId, duration } = req.body;
+
+        if (!file) throw new BadRequestException("Audio file is required");
+        if (!targetUserId) throw new BadRequestException("Target user ID is required");
+
+        let conversation = await this.conversationRepo.findOneDocument({
+            type: conversationTypeEnum.DIRECT,
+            members: { $all: [targetUserId, user._id] }
+        });
+        if (!conversation) {
+            conversation = await this.conversationRepo.createDocument({
+                type: conversationTypeEnum.DIRECT,
+                members: [targetUserId, user._id]
+            });
+        }
+
+        const uploadResult = await uploadAudioOnCloudinary(file.path);
+
+        const senderId = user._id.toString();
+        const receiverId = targetUserId.toString();
+        const isReceiverOnline = (connectedSockets.get(receiverId)?.length || 0) > 0;
+        const status = isReceiverOnline ? MessageStatusEnum.DELIVERED : MessageStatusEnum.SENT;
+        const deliveredAt = isReceiverOnline ? new Date() : undefined;
+
+        const message = await this.messageRepo.createDocument({
+            conversationId: conversation._id,
+            senderId: user._id,
+            voiceNote: {
+                url: uploadResult.secure_url,
+                publicId: uploadResult.public_id,
+                duration: duration ? Math.round(Number(duration)) : Math.round(uploadResult.duration || 0)
+            },
+            status,
+            deliveredAt
+        });
+
+        await ConversationModel.findByIdAndUpdate(conversation._id, {
+            updatedAt: new Date()
+        });
+
+        getIo()?.to(conversation._id.toString()).emit("message-sent", message);
+        emitToUser(senderId, "message-sent", message);
+        emitToUser(receiverId, "message-sent", message);
+
+        emitToUser(senderId, "conversation-updated", {
+            conversationId: conversation._id,
+            targetUserId: receiverId
+        });
+        emitToUser(receiverId, "conversation-updated", {
+            conversationId: conversation._id,
+            targetUserId: senderId
+        });
+
+        return res.status(201).json(successResponse("Voice note sent successfully", 201, message));
     };
 }
 

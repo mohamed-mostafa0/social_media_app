@@ -16,6 +16,11 @@ const messageSchema = new mongoose.Schema<IMessage>({
         required: true
     },
     attachments: [String],
+    voiceNote:{
+        url:String,
+        publicId:String,
+        duration:Number
+    },
     status:{
         type:String,
         enum:MessageStatusEnum,

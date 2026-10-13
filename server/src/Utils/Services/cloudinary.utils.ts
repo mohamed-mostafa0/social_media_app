@@ -74,3 +74,10 @@ export const deleteImagesOnCloudinary = async(publicIds:string[])=>{
     const results = await Promise.all(deletePromises);
     return results;
 }
+
+export const uploadAudioOnCloudinary = async (filePath: string, folder = "voice_notes") => {
+  return await cloudinaryV2.uploader.upload(filePath, {
+    resource_type: "video", 
+    folder,
+  });
+};

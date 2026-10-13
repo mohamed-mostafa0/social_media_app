@@ -2,10 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiMinus, FiSend, FiMaximize2 } from "react-icons/fi";
+import { FiX, FiMinus, FiSend, FiMaximize2, FiMic, FiTrash2 } from "react-icons/fi";
 import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import { Avatar } from "@/components/ui/Avatar";
 import { useChat } from "../hooks/useChat";
+import { useAudioRecorder } from "../hooks/useAudioRecorder";
+import { VoiceNotePlayer } from "./VoiceNotePlayer";
+import { chatService } from "../api/chat.service";
 import { formatMessageTime, formatMessageDate, isDifferentDay } from "../utils/chatDate.utils";
 
 export function ChatWidget() {
@@ -24,14 +27,29 @@ export function ChatWidget() {
   } = useChat();
 
   const [inputText, setInputText] = useState("");
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const {
+    isRecording,
+    duration,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useAudioRecorder();
 
   useEffect(() => {
     if (!isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isMinimized, isOpen, isOtherUserTyping]);
+
+  useEffect(() => {
+    return () => {
+      cancelRecording();
+    };
+  }, [activeUser?.id, isOpen, cancelRecording]);
 
   if (!isOpen || !activeUser) return null;
 
@@ -56,6 +74,43 @@ export function ChatWidget() {
     if (sent) {
       setInputText("");
     }
+  };
+
+  const handleStartRecord = async () => {
+    if (!isConnected) return;
+    const started = await startRecording();
+    if (!started) {
+      alert("Microphone permission denied or microphone not found.");
+    }
+  };
+
+  const handleSendVoice = async () => {
+    if (isUploadingVoice) return;
+    try {
+      setIsUploadingVoice(true);
+      const result = await stopRecording();
+      if (!result || !result.blob) {
+        setIsUploadingVoice(false);
+        return;
+      }
+
+      if (result.duration < 1 && result.blob.size < 100) {
+        setIsUploadingVoice(false);
+        return;
+      }
+
+      await chatService.sendVoiceNote(activeUser.id, result.blob, result.duration);
+    } catch (error) {
+      console.error("[ChatWidget] Failed to send voice note:", error);
+    } finally {
+      setIsUploadingVoice(false);
+    }
+  };
+
+  const formatRecordingDuration = (secs: number) => {
+    const mins = Math.floor(secs / 60);
+    const remaining = secs % 60;
+    return `${mins}:${remaining < 10 ? "0" : ""}${remaining}`;
   };
 
   return (
@@ -161,13 +216,22 @@ export function ChatWidget() {
 
                       <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[80%] px-3.5 py-2 rounded-2xl text-xs leading-relaxed break-words shadow-xs ${
+                          className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-xs leading-relaxed break-words shadow-xs ${
                             isMine
                               ? "bg-blue-600 text-white rounded-br-xs"
                               : "bg-white text-gray-800 border border-gray-100 rounded-bl-xs"
                           }`}
                         >
-                          <p>{msg.text}</p>
+                          {msg.voiceNote && (
+                            <VoiceNotePlayer
+                              url={msg.voiceNote.url}
+                              duration={msg.voiceNote.duration}
+                              isMine={isMine}
+                            />
+                          )}
+                          {msg.text && (
+                            <p className={msg.voiceNote ? "mt-1.5" : ""}>{msg.text}</p>
+                          )}
                           <div
                             className={`text-[9.5px] mt-0.5 ml-8 flex items-center justify-end gap-1 select-none font-medium ${
                               isMine ? "text-blue-100/90" : "text-gray-400"
@@ -205,27 +269,76 @@ export function ChatWidget() {
               <div ref={messagesEndRef} />
             </div>
 
+            {isRecording || isUploadingVoice ? (
+              <div className="p-2.5 bg-white border-t border-gray-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-rose-500 font-medium text-xs min-w-0">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
+                  </span>
+                  <span className="font-mono text-gray-800 font-semibold">{formatRecordingDuration(duration)}</span>
+                  <span className="text-gray-400 text-[11px] truncate">
+                    {isUploadingVoice ? "Sending voice note..." : "Recording audio..."}
+                  </span>
+                </div>
 
-            <form
-              onSubmit={handleSend}
-              className="p-2.5 bg-white border-t border-gray-100 flex items-center gap-2"
-            >
-              <input
-                type="text"
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={`Message ${activeUser.name}...`}
-                disabled={!isConnected}
-                className="flex-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-colors disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!inputText.trim() || !isConnected}
-                className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isUploadingVoice && (
+                    <button
+                      type="button"
+                      onClick={cancelRecording}
+                      className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                      title="Cancel recording"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleSendVoice}
+                    disabled={isUploadingVoice}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center shrink-0"
+                    title="Send voice note"
+                  >
+                    {isUploadingVoice ? (
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <FiSend className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form
+                onSubmit={handleSend}
+                className="p-2.5 bg-white border-t border-gray-100 flex items-center gap-2"
               >
-                <FiSend className="w-3.5 h-3.5" />
-              </button>
-            </form>
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder={`Message ${activeUser.name}...`}
+                  disabled={!isConnected}
+                  className="flex-1 px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-colors disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={handleStartRecord}
+                  disabled={!isConnected}
+                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-40 rounded-xl transition-all cursor-pointer shrink-0"
+                  title="Record voice note"
+                >
+                  <FiMic className="w-4 h-4" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || !isConnected}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-xl transition-all cursor-pointer shadow-xs disabled:cursor-not-allowed flex items-center justify-center shrink-0"
+                >
+                  <FiSend className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            )}
           </>
         )}
       </motion.div>

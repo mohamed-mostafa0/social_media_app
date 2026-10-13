@@ -9,7 +9,7 @@ import { unlink } from "node:fs/promises"
 
 
 export const uploadMedia = (
-    allowedTypes: string[] = [fileTypeEnum.IMAGE, fileTypeEnum.VIDEO]
+    allowedTypes: string[] = [fileTypeEnum.IMAGE, fileTypeEnum.VIDEO , fileTypeEnum.AUDIO]
 ) => {
     const storage = multer.diskStorage({});
     const fileFilter = (req: Request , file: Express.Multer.File , cb: multer.FileFilterCallback

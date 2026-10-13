@@ -7,15 +7,22 @@ export enum MessageStatusEnum {
     SEEN = "seen"
 }
 
+export interface IVoiceNote{
+    url:string,
+    publicId:string,
+    duration:number
+}
+
 
 export interface IMessage extends Document {
-    text: string;
+    text?: string;
     conversationId: Types.ObjectId;
     senderId: Types.ObjectId;
-    attachments: string[];
+    attachments?: string[];
     createdAt?: Date;
     updatedAt?: Date;
-    status:MessageStatusEnum,
-    deliveredAt?:Date,
-    seenAt?:Date
+    status: MessageStatusEnum;
+    deliveredAt?: Date;
+    seenAt?: Date;
+    voiceNote?: IVoiceNote;
 }
