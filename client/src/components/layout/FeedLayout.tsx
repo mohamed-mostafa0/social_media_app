@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { TopNavbar } from "./TopNavbar";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { ChatWidget } from "@/features/chat";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 
@@ -51,7 +52,7 @@ export function FeedLayout({ children }: FeedLayoutProps) {
             <LeftSidebar />
           </div>
 
-          <div className="flex-1 min-w-0 overflow-y-auto relative">
+          <div className="flex-1 min-w-0 overflow-y-auto relative pb-16 lg:pb-0">
             {children}
           </div>
 
@@ -62,6 +63,7 @@ export function FeedLayout({ children }: FeedLayoutProps) {
       )}
 
       <ChatWidget />
+      <MobileBottomNav />
     </div>
   );
 }

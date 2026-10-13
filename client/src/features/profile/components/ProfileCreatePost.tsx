@@ -34,7 +34,7 @@ export function ProfileCreatePost({ onPost }: ProfileCreatePostProps) {
   } = useCreatePostForm({ onPost });
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-100 mb-6 transition-all">
+    <div className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs border border-gray-100 mb-4 sm:mb-6 transition-all">
       <input
         type="file"
         ref={fileInputRef}

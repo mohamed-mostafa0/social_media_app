@@ -75,21 +75,21 @@ export function Stories() {
   return (
     <>
       <div
-        className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 mb-6 overflow-hidden"
+        className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs sm:shadow-sm border border-gray-100 mb-4 sm:mb-6 overflow-hidden"
         ref={containerRef}
       >
         {isLoading ? (
-          <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-1 scrollbar-hide touch-pan-x">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0 animate-pulse">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200 border-2 border-white" />
-                <div className="w-12 h-2.5 bg-gray-200 rounded-md" />
+              <div key={i} className="flex flex-col items-center gap-1.5 sm:gap-2 flex-shrink-0 animate-pulse">
+                <div className="w-[52px] h-[52px] sm:w-16 sm:h-16 rounded-full bg-gray-200 border-2 border-white" />
+                <div className="w-11 sm:w-12 h-2.5 bg-gray-200 rounded-md" />
               </div>
             ))}
           </div>
         ) : (
           <motion.div
-            className="flex gap-4 sm:gap-6 overflow-x-auto pb-1 scrollbar-hide"
+            className="flex gap-3 sm:gap-6 overflow-x-auto pb-1 scrollbar-hide touch-pan-x"
             variants={containerVariants}
             initial="hidden"
             animate={isInView ? "visible" : "hidden"}
@@ -105,11 +105,11 @@ export function Stories() {
                 <motion.div
                   key={group.user?._id || index}
                   variants={itemVariants}
-                  className="flex flex-col items-center gap-1.5 sm:gap-2 flex-shrink-0 cursor-pointer group select-none"
+                  className="flex flex-col items-center gap-1 sm:gap-2 flex-shrink-0 cursor-pointer group select-none"
                   onClick={() => handleUserStoryClick(group)}
                 >
                   <div
-                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] transition-transform duration-200 group-hover:scale-105 ${
+                    className={`relative w-[52px] h-[52px] sm:w-16 sm:h-16 rounded-full p-[2px] transition-transform duration-200 group-hover:scale-105 ${
                       group.isUser
                         ? hasStories
                           ? hasUnseen
@@ -144,7 +144,7 @@ export function Stories() {
                     )}
                   </div>
 
-                  <span className="text-[11px] sm:text-xs font-medium text-gray-700 text-center truncate w-16">
+                  <span className="text-[10px] sm:text-xs font-medium text-gray-700 text-center truncate w-14 sm:w-16">
                     {group.isUser ? "Your Story" : `${group.user?.firstName || "User"}`}
                   </span>
                 </motion.div>

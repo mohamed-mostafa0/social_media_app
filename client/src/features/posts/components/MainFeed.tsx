@@ -37,12 +37,12 @@ export function MainFeed() {
 
 
   return (
-    <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 pb-20 lg:pb-8">
       <Stories />
       <ProfileCreatePost />
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-gray-800">News Feed</h2>
+      <div className="flex items-center justify-between mb-3 sm:mb-4 px-1 sm:px-0">
+        <h2 className="text-xs sm:text-sm font-bold text-gray-800">News Feed</h2>
         <button className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
           Sort by: <span className="text-gray-900">Latest</span>
           <FiChevronDown className="w-4 h-4 ml-0.5" />
@@ -50,13 +50,13 @@ export function MainFeed() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <PostCardSkeleton hasImage={true} />
           <PostCardSkeleton hasImage={false} />
           <PostCardSkeleton hasImage={true} />
         </div>
       ) : isError ? (
-        <div className="bg-white rounded-2xl p-8 border border-red-100 text-center shadow-xs">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-red-100 text-center shadow-xs">
           <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-3">
             <FiAlertCircle className="w-6 h-6" />
           </div>
@@ -72,7 +72,7 @@ export function MainFeed() {
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 border border-gray-100 text-center shadow-xs">
+        <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-12 border border-gray-100 text-center shadow-xs">
           <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3">
             <FiInbox className="w-7 h-7" />
           </div>
@@ -82,7 +82,7 @@ export function MainFeed() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {posts.map((post) => {
             const authorName = post.owner
               ? `${post.owner.firstName || ""} ${post.owner.lastName || ""}`.trim() ||

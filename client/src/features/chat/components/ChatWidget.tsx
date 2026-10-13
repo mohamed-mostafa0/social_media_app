@@ -120,7 +120,7 @@ export function ChatWidget() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 40, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="fixed bottom-4 right-4 sm:right-6 z-50 w-80 sm:w-88 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
+        className="fixed bottom-18 sm:bottom-20 lg:bottom-4 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm sm:w-88 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col"
       >
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-white flex items-center justify-between select-none">
           <div className="flex items-center gap-2.5 min-w-0">

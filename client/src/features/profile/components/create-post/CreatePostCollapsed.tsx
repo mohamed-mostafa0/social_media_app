@@ -21,24 +21,24 @@ export function CreatePostCollapsed({
   onSelectAttachment,
 }: CreatePostCollapsedProps) {
   return (
-    <div className="flex items-center gap-3 sm:gap-4">
+    <div className="flex items-center gap-2.5 sm:gap-4">
       <Avatar
         size="md"
         src={userAvatar || "/default-avatar-profile.webp"}
         alt={displayName}
       />
 
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <input
           type="text"
           readOnly
           placeholder={`What's on your mind, ${userName || "there"}?`}
-          className="w-full bg-gray-50 hover:bg-gray-100/80 text-sm text-gray-800 placeholder-gray-400 rounded-full px-4 py-2.5 outline-none cursor-pointer transition-colors"
+          className="w-full bg-gray-50 hover:bg-gray-100/80 text-xs sm:text-sm text-gray-800 placeholder-gray-400 rounded-full px-3.5 sm:px-4 py-2 sm:py-2.5 outline-none cursor-pointer transition-colors truncate"
           onClick={onExpand}
         />
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
+      <div className="flex items-center gap-0.5 sm:gap-2 text-gray-400 shrink-0">
         <button
           type="button"
           aria-label="Add photo"
