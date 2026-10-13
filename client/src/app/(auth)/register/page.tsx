@@ -149,7 +149,7 @@ export default function RegisterPage() {
         <Button
           type="submit"
           variant="primary"
-          className="w-full py-3 text-sm mt-6 shadow-lg shadow-blue-500/30"
+          className="w-full py-3 cursor-pointer text-sm mt-6 shadow-lg shadow-blue-500/30"
           disabled={formik.isSubmitting}
         >
           {formik.isSubmitting ? "Creating account..." : "Sign up"}

@@ -1,10 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LeftSidebar } from "./LeftSidebar";
 import { RightSidebar } from "./RightSidebar";
 import { TopNavbar } from "./TopNavbar";
 import { ChatWidget } from "@/features/chat";
+import { useAuthStore } from "@/features/auth/stores/auth.store";
 
 interface FeedLayoutProps {
   children: React.ReactNode;
@@ -12,7 +14,30 @@ interface FeedLayoutProps {
 
 export function FeedLayout({ children }: FeedLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const isAuth = useAuthStore((state) => state.isAuth);
   const isProfilePage = pathname.startsWith("/profile");
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasHydrated && !isAuth) {
+      const fromParam = pathname !== "/" ? `?from=${encodeURIComponent(pathname)}` : "";
+      router.replace(`/login${fromParam}`);
+    }
+  }, [hasHydrated, isAuth, pathname, router]);
+
+  if (!hasHydrated || !isAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-xs font-semibold text-gray-500">Checking authorization...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
