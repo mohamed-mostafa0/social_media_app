@@ -47,6 +47,7 @@ export const UserType: GraphQLObjectType = new GraphQLObjectType({
         followingCount: { type: GraphQLInt },
         postsCount: { type: GraphQLInt },
         isPrivate: { type: GraphQLBoolean },
+        isVerified: { type: GraphQLBoolean },
         isSelf: {
             type: GraphQLBoolean,
             resolve: (user: any, _args: any, context: any) => {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar } from "../ui/Avatar";
 import { 
@@ -14,7 +15,18 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
-import { useFollowRequests } from "@/features/profile";
+import { useFollowRequests, useGetProfile, FollowersModal } from "@/features/profile";
+
+function formatStatNumber(num?: number): string {
+  if (num === undefined || num === null || isNaN(num)) return "0";
+  if (num >= 1_000_000) {
+    return (num / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (num >= 1_000) {
+    return (num / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  return num.toLocaleString();
+}
 
 const navItems = [
   { name: "Feed", icon: FiHome, path: "/", badge: 0 },
@@ -36,40 +48,97 @@ const pages = [
 export function LeftSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
+  const { data: profile, isLoading: isProfileLoading } = useGetProfile();
   const { data: requests = [] } = useFollowRequests();
+  const [followModalType, setFollowModalType] = useState<"followers" | "following" | null>(null);
+
+  const displayUser = profile || user;
+  const followersCount = profile?.followersCount ?? user?.followersCount ?? 0;
+  const followingCount = profile?.followingCount ?? user?.followingCount ?? 0;
+  const postsCount = profile?.postsCount ?? (profile?.posts?.totalDocs ?? user?.postsCount ?? 0);
 
   return (
-    <aside className="w-75 h-[calc(100vh-65px)] sticky top-[65px] flex flex-col pl-5 pt-6 pb-4 pr-3 overflow-y-auto scrollbar-hide">
-      
-      <div className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
-        <div className="flex items-center gap-3 mb-5">
-          <Avatar size="md" src={user?.profilePicture || "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop"} />
-          <div>
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1">
-              {user ? `${user.firstName} ${user.lastName}` : "Guest User"}
-              {user?.isVerified && (
-                <span className="bg-blue-500 text-white rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px]">✓</span>
-              )}
-            </h2>
-            <p className="text-xs text-gray-500">{user?.email ? `@${user.email.split('@')[0]}` : "@guest"}</p>
-          </div>
-        </div>
+    <>
+      <aside className="w-75 h-[calc(100vh-65px)] sticky top-[65px] flex flex-col pl-5 pt-6 pb-4 pr-3 overflow-y-auto scrollbar-hide">
         
-        <div className="flex justify-between text-center">
-          <div>
-            <p className="text-sm font-bold text-gray-900">2.3k</p>
-            <p className="text-[10px] text-gray-500 uppercase">Follower</p>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-gray-900">235</p>
-            <p className="text-[10px] text-gray-500 uppercase">Following</p>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-gray-900">80</p>
-            <p className="text-[10px] text-gray-500 uppercase">Post</p>
+        <div className="bg-white rounded-2xl p-5 mb-6 shadow-sm border border-gray-100">
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 mb-5 group p-1 -m-1 rounded-xl hover:bg-gray-50/80 transition-colors"
+            title="View profile"
+          >
+            <Avatar
+              size="md"
+              src={displayUser?.profilePicture || "/default-avatar-profile.webp"}
+            />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1 group-hover:text-blue-600 transition-colors">
+                <span className="truncate">
+                  {displayUser ? `${displayUser.firstName} ${displayUser.lastName}`.trim() : "Guest User"}
+                </span>
+                {displayUser?.isVerified && (
+                  <span className="bg-blue-500 text-white rounded-full w-3.5 h-3.5 shrink-0 flex items-center justify-center text-[8px]">✓</span>
+                )}
+              </h2>
+              <p className="text-xs text-gray-500 truncate">{displayUser?.email ? `@${displayUser.email.split('@')[0]}` : "@guest"}</p>
+            </div>
+          </Link>
+          
+          <div className="grid grid-cols-3 divide-x divide-gray-100 text-center py-2 px-1 bg-gray-50/70 rounded-xl border border-gray-100/80">
+            <button
+              type="button"
+              onClick={() => setFollowModalType("followers")}
+              className="px-1 py-1 rounded-lg hover:bg-white hover:shadow-xs transition-all cursor-pointer group"
+              title="View followers"
+            >
+              {isProfileLoading && !profile && !user ? (
+                <div className="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto mb-1" />
+              ) : (
+                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  {formatStatNumber(followersCount)}
+                </p>
+              )}
+              <p className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 uppercase tracking-wider">
+                Follower
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setFollowModalType("following")}
+              className="px-1 py-1 rounded-lg hover:bg-white hover:shadow-xs transition-all cursor-pointer group"
+              title="View following"
+            >
+              {isProfileLoading && !profile && !user ? (
+                <div className="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto mb-1" />
+              ) : (
+                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  {formatStatNumber(followingCount)}
+                </p>
+              )}
+              <p className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 uppercase tracking-wider">
+                Following
+              </p>
+            </button>
+
+            <Link
+              href="/profile"
+              className="px-1 py-1 rounded-lg hover:bg-white hover:shadow-xs transition-all cursor-pointer group block"
+              title="View posts"
+            >
+              {isProfileLoading && !profile && !user ? (
+                <div className="h-4 w-6 bg-gray-200 rounded animate-pulse mx-auto mb-1" />
+              ) : (
+                <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  {formatStatNumber(postsCount)}
+                </p>
+              )}
+              <p className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 uppercase tracking-wider">
+                Post
+              </p>
+            </Link>
           </div>
         </div>
-      </div>
 
       <div className="bg-white rounded-2xl py-4 shadow-sm border border-gray-100 mb-6 flex-1">
         <nav className="space-y-1 px-3 mb-6">
@@ -132,5 +201,14 @@ export function LeftSidebar() {
         <span className="w-full mt-1">Platform © 2023</span>
       </div>
     </aside>
+
+    <FollowersModal
+      isOpen={followModalType !== null}
+      onClose={() => setFollowModalType(null)}
+      initialTab={followModalType || "followers"}
+      followersCount={followersCount}
+      followingCount={followingCount}
+    />
+  </>
   );
 }

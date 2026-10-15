@@ -67,6 +67,7 @@ export interface GraphQLUserProfile {
   postsCount: number;
   isPrivate?: boolean;
   isSelf?: boolean;
+  isVerified?: boolean;
   followStatus?: "ACCEPTED" | "PENDING" | "NONE";
   posts?: {
     totalDocs: number;
@@ -108,6 +109,7 @@ export const GET_PROFILE_QUERY = `
       followingCount
       postsCount
       isPrivate
+      isVerified
       isSelf
       followStatus
       posts {

@@ -4,6 +4,8 @@ import { FollowRequestItem } from "../types/request.types";
 import { useAuthStore } from "@/features/auth/stores/auth.store";
 
 export const FOLLOW_REQUESTS_QUERY_KEY = ["follow-requests"] as const;
+import { PROFILE_QUERY_KEY } from "./useGetProfile";
+import { FOLLOWER_QUERY_KEY, FOLLOW_QUERY_KEY } from "./useFollowingOrFollowers";
 
 export function useFollowRequests() {
   const isAuth = useAuthStore((state) => state.isAuth);
@@ -64,6 +66,9 @@ export function useRespondToFollowRequest() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: FOLLOW_REQUESTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: [FOLLOWER_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [FOLLOW_QUERY_KEY] });
     },
   });
 }
